@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EARLY BRAKING MOTORSPORT - F1 Live Telemetry & Timing</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,900;1,900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-black: #0a0a0a;
+            --surface-black: #141414;
+            --border-gray: #262626;
+            --text-white: #ffffff;
+            --text-muted: #888888;
+            --accent-green: #00ff88;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--text-white);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding-bottom: 60px;
+        }
+
+        .montserrat-black {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .montserrat-italic {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            text-transform: uppercase;
+        }
+
+        /* HEADER */
+        header {
+            background-color: #000;
+            border-bottom: 2px solid var(--text-white);
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-white);
+        }
+
+        .eb-logo-box {
+            background-color: #000;
+            color: #fff;
+            padding: 4px 14px;
+            font-size: 28px;
+            letter-spacing: -2px;
+            border: 2px solid #fff;
+            line-height: 1;
+        }
+
+        .brand-titles {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-main {
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-top: 3px;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* TRACK FLAG BANNER */
+        .flag-banner {
+            border: 2px solid var(--text-white);
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #000;
+        }
+
+        .flag-status-text {
+            font-size: 14px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flag-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            display: inline-block;
+        }
+
+        /* SESSION INFO CARD */
+        .session-card {
+            background-color: var(--surface-black);
+            border: 1px solid var(--border-gray);
+            padding: 25px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .status-badge {
+            background-color: #fff;
+            color: #000;
+            padding: 4px 12px;
+            font-size: 11px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .track-stats {
+            display: flex;
+            gap: 25px;
+            border-left: 1px solid var(--border-gray);
+            padding-left: 25px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .btn-refresh {
+            background: transparent;
+            color: var(--text-white);
+            border: 1px solid var(--text-white);
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background-color: var(--text-white);
+            color: #000;
+        }
+
+        /* RACE CONTROL FEED */
+        .race-control-box {
+            background-color: var(--surface-black);
+            border: 1px solid var(--border-gray);
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            font-size: 12px;
+        }
+
+        .rc-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-gray);
+            padding-bottom: 4px;
+        }
+
+        .rc-messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .rc-item {
+            color: var(--text-white);
+            font-family: monospace;
+        }
+
+        /* TIMING TABLE */
+        .timing-table-wrapper {
+            background-color: var(--surface-black);
+            border: 1px solid var(--border-gray);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #000;
+            padding: 14px 16px;
+            border-bottom: 2px solid var(--border-gray);
+            color: var(--text-muted);
+            font-size: 10px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-gray);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .pos-cell {
+            font-size: 15px;
+            width: 40px;
+        }
+
+        .driver-code {
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+
+        .team-name {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .sector-cell {
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .tyre-badge {
+            border: 1px solid var(--text-white);
+            color: var(--text-white);
+            padding: 2px 6px;
+            font-size: 10px;
+            display: inline-block;
+            border-radius: 2px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 1024px) {
+            .track-stats { display: none; }
+            .brand-sub { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <a href="#" class="brand-logo">
+            <span class="eb-logo-box montserrat-italic">EB</span>
+            <div class="brand-titles">
+                <span class="brand-main montserrat-black">MOTORSPORT</span>
+                <span class="brand-sub montserrat-black">EARLY BRAKING MOTORSPORT</span>
+            </div>
+        </a>
+        <div class="montserrat-black" style="font-size: 12px; letter-spacing: 1px;">
+            <i class="fa-solid fa-flag-checkered"></i> LIVE RACE CONTROL HUB
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- TRACK FLAG BANNER -->
+        <div class="flag-banner" id="flag-banner">
+            <div class="flag-status-text montserrat-black" id="flag-status-text">
+                <span class="flag-dot"></span> TRACK STATUS: GREEN FLAG (TRACK CLEAR)
+            </div>
+            <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);">
+                LATENCY: ~0.3s (DIRECT OPENF1 FEED)
+            </div>
+        </div>
+
+        <!-- SESSION HEADER -->
+        <div class="session-card">
+            <div class="session-info">
+                <span class="status-badge montserrat-black" id="session-status">SYNCING...</span>
+                <h1 class="montserrat-italic" id="session-title" style="font-size: 26px;">FETCHING SESSION...</h1>
+                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                    Session Key: <span id="session-key-display">Latest</span> | 
+                    <span style="color: var(--accent-green); font-weight: 700;">● LIVE TELEMETRY</span>
+                </p>
+            </div>
+
+            <!-- LIVE TRACK WEATHER (DARI OPENF1 /weather) -->
+            <div class="track-stats">
+                <div class="stat-box">
+                    <div class="stat-label montserrat-black">AIR TEMP</div>
+                    <div class="stat-value montserrat-black" id="air-temp">--°C</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label montserrat-black">TRACK TEMP</div>
+                    <div class="stat-value montserrat-black" id="track-temp">--°C</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label montserrat-black">HUMIDITY</div>
+                    <div class="stat-value montserrat-black" id="humidity">--%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label montserrat-black">WIND SPEED</div>
+                    <div class="stat-value montserrat-black" id="wind-speed">-- M/S</div>
+                </div>
+            </div>
+
+            <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
+                <i class="fa-solid fa-rotate-right"></i> REFRESH
+            </button>
+        </div>
+
+        <!-- RACE CONTROL & STEWARDS FEED -->
+        <div class="race-control-box">
+            <div class="rc-title montserrat-black"><i class="fa-solid fa-shield-halved"></i> RACE CONTROL & STEWARDS FEED</div>
+            <div class="rc-messages-list" id="rc-messages">
+                <div class="rc-item">[EARLY BRAKING ENGINE] INITIALIZING STREAM...</div>
+            </div>
+        </div>
+
+        <!-- TELEMETRY TABLE -->
+        <div class="timing-table-wrapper">
+            <table>
+                <thead>
+                    <tr class="montserrat-black">
+                        <th>POS</th>
+                        <th>NO</th>
+                        <th>DRIVER</th>
+                        <th>TYRE</th>
+                        <th>PITS</th>
+                        <th>BEST LAP</th>
+                        <th>GAP LEADER</th>
+                        <th>INTERVAL</th>
+                        <th>SECTOR 1</th>
+                        <th>SECTOR 2</th>
+                        <th>SECTOR 3</th>
+                        <th>SPEED TRAP</th>
+                    </tr>
+                </thead>
+                <tbody id="timing-body">
+                    <tr>
+                        <td colspan="12" class="loading-state montserrat-black">
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO OPENF1 STREAM...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://api.openf1.org/v1";
+
+        async function fetchLiveTiming() {
+            const tableBody = document.getElementById('timing-body');
+            
+            try {
+                // 1. Session Utama
+                let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
+                let sessions = await sessionRes.json();
+                
+                if (!sessions || sessions.length === 0) {
+                    sessionRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2023`);
+                    sessions = await sessionRes.json();
+                }
+
+                const latestSession = sessions[sessions.length - 1];
+                const sessionKey = latestSession.session_key;
+
+                document.getElementById('session-status').innerText = "OPENF1 CONNECTED";
+                document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()}`;
+                document.getElementById('session-key-display').innerText = sessionKey;
+
+                // 2. Multithread Fetch Data (termasuk Weather & Intervals)
+                const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes] = await Promise.all([
+                    fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
+                    fetch(`${API_BASE}/position?session_key=${sessionKey}`),
+                    fetch(`${API_BASE}/laps?session_key=${sessionKey}`),
+                    fetch(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => null),
+                    fetch(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => null),
+                    fetch(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => null),
+                    fetch(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => null),
+                    fetch(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null)
+                ]);
+
+                const drivers = await driversRes.json();
+                const positions = await positionsRes.json();
+                const laps = await lapsRes.json();
+                const tyres = tyresRes ? await tyresRes.json() : [];
+                const raceControl = raceControlRes ? await raceControlRes.json() : [];
+                const pits = pitRes ? await pitRes.json() : [];
+                const weather = weatherRes ? await weatherRes.json() : [];
+                const intervals = intervalsRes ? await intervalsRes.json() : [];
+
+                // 3. Update Weather Data
+                if (weather && weather.length > 0) {
+                    const latestW = weather[weather.length - 1];
+                    document.getElementById('air-temp').innerText = `${latestW.air_temperature}°C`;
+                    document.getElementById('track-temp').innerText = `${latestW.track_temperature}°C`;
+                    document.getElementById('humidity').innerText = `${latestW.humidity}%`;
+                    document.getElementById('wind-speed').innerText = `${latestW.wind_speed} M/S`;
+                }
+
+                // 4. Update Race Control Feed
+                if (raceControl && raceControl.length > 0) {
+                    const rcBox = document.getElementById('rc-messages');
+                    const recentRc = raceControl.slice(-3).reverse();
+                    rcBox.innerHTML = recentRc.map(msg => 
+                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
+                    ).join('');
+                }
+
+                // 5. Driver Mapping
+                const driverMap = {};
+                drivers.forEach(d => {
+                    driverMap[d.driver_number] = {
+                        code: d.name_acronym || "DRV",
+                        fullName: d.full_name || "Driver",
+                        team: d.team_name || "Team",
+                        number: d.driver_number
+                    };
+                });
+
+                // 6. Latest Position
+                const latestPositions = {};
+                positions.forEach(p => { latestPositions[p.driver_number] = p.position; });
+
+                // 7. Pit Stop Counter
+                const pitMap = {};
+                pits.forEach(p => { pitMap[p.driver_number] = (pitMap[p.driver_number] || 0) + 1; });
+
+                // 8. Intervals & Gaps Mapping
+                const intervalMap = {};
+                if (intervals && intervals.length > 0) {
+                    intervals.forEach(i => {
+                        intervalMap[i.driver_number] = {
+                            gap: i.gap_to_leader !== null ? `+${i.gap_to_leader}s` : "LEADER",
+                            interval: i.interval !== null ? `+${i.interval}s` : "-"
+                        };
+                    });
+                }
+
+                // 9. Lap & Sectors Mapping
+                const bestLaps = {};
+                const sectorTimes = {};
+                laps.forEach(l => {
+                    if (l.lap_duration) {
+                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number]) {
+                            bestLaps[l.driver_number] = l.lap_duration;
+                            sectorTimes[l.driver_number] = {
+                                s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
+                                s2: l.duration_sector_2 ? l.duration_sector_2.toFixed(3) : "-",
+                                s3: l.duration_sector_3 ? l.duration_sector_3.toFixed(3) : "-",
+                                speed: l.st_speed ? Math.round(l.st_speed) : "-"
+                            };
+                        }
+                    }
+                });
+
+                // 10. Tyre Stints Mapping
+                const tyreMap = {};
+                tyres.forEach(t => {
+                    tyreMap[t.driver_number] = {
+                        compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S",
+                        laps: t.tyre_age_at_start || 1
+                    };
+                });
+
+                // 11. Assembly Leaderboard
+                let leaderboard = [];
+                Object.keys(latestPositions).forEach(num => {
+                    if (driverMap[num]) {
+                        leaderboard.push({
+                            pos: latestPositions[num],
+                            number: num,
+                            driver: driverMap[num],
+                            bestLap: bestLaps[num] || null,
+                            sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
+                            tyre: tyreMap[num] || { compound: "S", laps: 1 },
+                            pits: pitMap[num] || 0,
+                            gap: intervalMap[num] ? intervalMap[num].gap : "-",
+                            interval: intervalMap[num] ? intervalMap[num].interval : "-"
+                        });
+                    }
+                });
+
+                leaderboard.sort((a, b) => a.pos - b.pos);
+
+                // Render Table
+                tableBody.innerHTML = leaderboard.map((row) => {
+                    let lapTimeFormatted = row.bestLap ? formatLapTime(row.bestLap) : "NO TIME";
+
+                    return `
+                        <tr>
+                            <td class="pos-cell montserrat-black">${row.pos}</td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
+                            <td>
+                                <div class="driver-code montserrat-black">${row.driver.code}</div>
+                                <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
+                            </td>
+                            <td>
+                                <span class="tyre-badge montserrat-black">${row.tyre.compound}</span>
+                                <span style="font-size: 10px; color: var(--text-muted); margin-left: 4px;">L${row.tyre.laps}</span>
+                            </td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
+                            <td class="sector-cell montserrat-black">${lapTimeFormatted}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
+                            <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("OpenF1 Fetch Error:", err);
+            }
+        }
+
+        function formatLapTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(3);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        fetchLiveTiming();
+        // Menggunakan jeda 3999 ms (Trik Keramat EB Motorsport)
+        setInterval(fetchLiveTiming, 3999);
+    </script>
+</body>
+</html>
