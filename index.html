@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EARLY BRAKING MOTORSPORT - F1 Live Telemetry & Timing</title>
+    <title>EARLY BRAKING MOTORSPORT - Live Telemetry & Timing</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +19,8 @@
             --text-white: #ffffff;
             --text-muted: #888888;
             --accent-green: #00ff88;
+            --accent-yellow: #ffcc00;
+            --accent-red: #ff3333;
         }
 
         * {
@@ -109,6 +111,7 @@
             justify-content: space-between;
             align-items: center;
             background-color: #000;
+            transition: border-color 0.3s ease;
         }
 
         .flag-status-text {
@@ -125,6 +128,23 @@
             border-radius: 50%;
             background-color: var(--accent-green);
             display: inline-block;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .flag-dot.yellow {
+            background-color: var(--accent-yellow);
+            box-shadow: 0 0 8px var(--accent-yellow);
+        }
+
+        .flag-dot.red {
+            background-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+
+        .flag-dot.green {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
         }
 
         /* SESSION INFO CARD */
@@ -313,10 +333,10 @@
         <!-- TRACK FLAG BANNER -->
         <div class="flag-banner" id="flag-banner">
             <div class="flag-status-text montserrat-black" id="flag-status-text">
-                <span class="flag-dot"></span> TRACK STATUS: GREEN FLAG (TRACK CLEAR)
+                <span class="flag-dot green" id="flag-dot"></span> <span id="flag-text">TRACK STATUS: GREEN FLAG (TRACK CLEAR)</span>
             </div>
             <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);">
-                LATENCY: ~0.3s (DIRECT OPENF1 FEED)
+                LATENCY: ~0.3s (DIRECT TELEMETRY FEED)
             </div>
         </div>
 
@@ -331,7 +351,7 @@
                 </p>
             </div>
 
-            <!-- LIVE TRACK WEATHER (DARI OPENF1 /weather) -->
+            <!-- LIVE TRACK WEATHER -->
             <div class="track-stats">
                 <div class="stat-box">
                     <div class="stat-label montserrat-black">AIR TEMP</div>
@@ -386,7 +406,7 @@
                 <tbody id="timing-body">
                     <tr>
                         <td colspan="12" class="loading-state montserrat-black">
-                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO OPENF1 STREAM...
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO TELEMETRY STREAM...
                         </td>
                     </tr>
                 </tbody>
@@ -396,6 +416,40 @@
 
     <script>
         const API_BASE = "https://api.openf1.org/v1";
+
+        // Logic Update Flag Status Dinamis
+        function updateTrackStatus(raceControlMsgs) {
+            const flagDot = document.getElementById('flag-dot');
+            const flagText = document.getElementById('flag-text');
+
+            if (!raceControlMsgs || raceControlMsgs.length === 0) return;
+
+            // Cari pesan flag terbaru dari race control feed
+            const flagEvents = raceControlMsgs.filter(m => m.flag || (m.category === 'Flag') || (m.message && m.message.toUpperCase().includes('FLAG')));
+            
+            if (flagEvents.length > 0) {
+                const latestFlag = flagEvents[flagEvents.length - 1];
+                const msgUpper = latestFlag.message ? latestFlag.message.toUpperCase() : '';
+                const flagType = latestFlag.flag ? latestFlag.flag.toUpperCase() : '';
+
+                if (flagType === 'RED' || msgUpper.includes('RED FLAG')) {
+                    flagDot.className = 'flag-dot red';
+                    flagText.innerText = 'TRACK STATUS: RED FLAG (SESSION SUSPENDED)';
+                } else if (flagType === 'YELLOW' || msgUpper.includes('YELLOW') || msgUpper.includes('SAFETY CAR') || msgUpper.includes('VSC')) {
+                    flagDot.className = 'flag-dot yellow';
+                    if (msgUpper.includes('VSC')) {
+                        flagText.innerText = 'TRACK STATUS: VIRTUAL SAFETY CAR (VSC)';
+                    } else if (msgUpper.includes('SAFETY CAR')) {
+                        flagText.innerText = 'TRACK STATUS: SAFETY CAR DEPLOYED';
+                    } else {
+                        flagText.innerText = 'TRACK STATUS: YELLOW FLAG (HAZARD AHEAD)';
+                    }
+                } else if (flagType === 'GREEN' || msgUpper.includes('GREEN') || msgUpper.includes('CLEAR')) {
+                    flagDot.className = 'flag-dot green';
+                    flagText.innerText = 'TRACK STATUS: GREEN FLAG (TRACK CLEAR)';
+                }
+            }
+        }
 
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
@@ -413,11 +467,11 @@
                 const latestSession = sessions[sessions.length - 1];
                 const sessionKey = latestSession.session_key;
 
-                document.getElementById('session-status').innerText = "OPENF1 CONNECTED";
+                document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
                 document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()}`;
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // 2. Multithread Fetch Data (termasuk Weather & Intervals)
+                // 2. Multithread Fetch Data
                 const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes] = await Promise.all([
                     fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/position?session_key=${sessionKey}`),
@@ -447,13 +501,16 @@
                     document.getElementById('wind-speed').innerText = `${latestW.wind_speed} M/S`;
                 }
 
-                // 4. Update Race Control Feed
+                // 4. Update Race Control Feed & Dynamic Track Flag
                 if (raceControl && raceControl.length > 0) {
                     const rcBox = document.getElementById('rc-messages');
                     const recentRc = raceControl.slice(-3).reverse();
                     rcBox.innerHTML = recentRc.map(msg => 
                         `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
                     ).join('');
+
+                    // Update Flag secara otomatis mengikuti server
+                    updateTrackStatus(raceControl);
                 }
 
                 // 5. Driver Mapping
@@ -561,7 +618,7 @@
                 }).join('');
 
             } catch (err) {
-                console.error("OpenF1 Fetch Error:", err);
+                console.error("Telemetry Fetch Error:", err);
             }
         }
 
