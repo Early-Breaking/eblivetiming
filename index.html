@@ -183,7 +183,7 @@
         .flag-dot.red { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
         .flag-dot.offline { background-color: var(--text-muted); box-shadow: none; }
 
-        /* MAIN LAYOUT GRID (DASHBOARD + TRACK MAP) */
+        /* MAIN LAYOUT GRID */
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 380px;
@@ -220,9 +220,11 @@
         .track-stats {
             display: flex;
             gap: 25px;
-            border-left: 1px solid var(--border-gray);
-            padding-left: 25px;
-            flex-wrap: wrap;
+            border-top: 1px solid var(--border-gray);
+            padding-top: 15px;
+            margin-top: 15px;
+            width: 100%;
+            justify-content: space-around;
         }
 
         .stat-box { text-align: center; }
@@ -345,6 +347,95 @@
         .tyre-badge { border: 1px solid var(--text-white); color: var(--text-white); padding: 2px 6px; font-size: 10px; display: inline-block; border-radius: 2px; }
         .loading-state { text-align: center; padding: 40px; color: var(--text-muted); }
 
+        /* ACCORDION CALENDAR STYLES */
+        .accordion-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .accordion-item {
+            background-color: var(--surface-black);
+            border: 1px solid var(--border-gray);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .accordion-header {
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background-color: #121212;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background-color: #1a1a1a;
+        }
+
+        .round-info-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .accordion-round-num {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .accordion-gp-title {
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .accordion-country {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .accordion-icon {
+            transition: transform 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .accordion-item.open .accordion-icon {
+            transform: rotate(180deg);
+            color: var(--text-white);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: var(--surface-black);
+            border-top: 0px solid var(--border-gray);
+        }
+
+        .accordion-item.open .accordion-content {
+            max-height: 500px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .session-sub-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .session-sub-table td {
+            padding: 12px 20px;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 12px;
+        }
+
+        .session-sub-table tr:last-child td {
+            border-bottom: none;
+        }
+
         /* SECTIONS VIEW TOGGLE */
         .view-section { display: none; }
         .view-section.active-view { display: block; }
@@ -364,6 +455,7 @@
         @media (max-width: 1024px) {
             .track-stats { display: none; }
             .brand-sub { display: none; }
+            .round-info-group { flex-direction: column; align-items: flex-start; gap: 4px; }
         }
     </style>
 </head>
@@ -429,7 +521,7 @@
                             </p>
                         </div>
 
-                        <div class="track-stats" style="width: 100%; justify-content: space-around; border-left: none; border-top: 1px solid var(--border-gray); padding-left: 0; padding-top: 15px; margin-top: 15px;">
+                        <div class="track-stats">
                             <div class="stat-box">
                                 <div class="stat-label montserrat-black">AIR TEMP</div>
                                 <div class="stat-value montserrat-black" id="air-temp">--°C</div>
@@ -448,7 +540,7 @@
                             </div>
                         </div>
 
-                        <div style="width: 100%; display: flex; justify-content: flex-end;">
+                        <div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 15px;">
                             <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
                                 <i class="fa-solid fa-rotate-right"></i> REFRESH
                             </button>
@@ -509,37 +601,22 @@
             </div>
         </div>
 
-        <!-- VIEW 2: RACE CALENDAR (JADWAL MUSIM DENGAN TIMEZONE) -->
+        <!-- VIEW 2: RACE CALENDAR (ACCORDION STYLE) -->
         <div id="view-schedule" class="view-section">
             <div class="session-card" style="margin-bottom: 25px;">
                 <div class="session-info">
                     <span class="status-badge montserrat-black">OFFICIAL SCHEDULE 2026</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Jadwal otomatis disesuaikan dengan zona waktu pilihan di pojok kanan atas.
+                        Klik pada salah satu Grand Prix untuk melihat detail jadwal sesi dalam zona waktu pilihan Anda.
                     </p>
                 </div>
             </div>
 
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr class="montserrat-black">
-                            <th>ROUND / LOCATION</th>
-                            <th>GRAND PRIX</th>
-                            <th>SESSION TYPE</th>
-                            <th>DATE & TIME</th>
-                            <th>CIRCUIT COUNTRY</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-body">
-                        <tr>
-                            <td colspan="5" class="loading-state montserrat-black">
-                                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> LOADING RACE CALENDAR...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="accordion-container" id="schedule-accordion">
+                <div class="loading-state montserrat-black">
+                    <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> LOADING RACE CALENDAR...
+                </div>
             </div>
         </div>
 
@@ -555,9 +632,9 @@
         const API_BASE = "https://api.openf1.org/v1";
         let currentTimezone = 'Asia/Jakarta';
         let scheduleLoaded = false;
-        let cachedSessions = [];
+        let cachedRounds = [];
 
-        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry (Mengatasi limit/timeout server sesaat)
+        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry
         async function fetchWithRetry(url, retries = 3, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -571,7 +648,7 @@
             }
         }
 
-        // Fungsi Switcher Tampilan (Live Timing vs Calendar)
+        // Fungsi Switcher Tampilan
         function switchView(viewName) {
             const viewTiming = document.getElementById('view-timing');
             const viewSchedule = document.getElementById('view-schedule');
@@ -599,8 +676,8 @@
         // Ganti Zona Waktu
         function changeTimezone(tz) {
             currentTimezone = tz;
-            if (scheduleLoaded && cachedSessions.length > 0) {
-                renderCalendarTable(cachedSessions);
+            if (scheduleLoaded && cachedRounds.length > 0) {
+                renderCalendarAccordion(cachedRounds);
             }
         }
 
@@ -620,43 +697,100 @@
             }).format(date);
         }
 
-        // Fetch Jadwal Race Otomatis dari API OpenF1 dengan Auto-Retry
+        // Fetch Jadwal Kalender & Kelompokkan per Round
         async function fetchRaceCalendar() {
-            const scheduleBody = document.getElementById('schedule-body');
+            const container = document.getElementById('schedule-accordion');
             try {
                 const currentYear = new Date().getFullYear();
                 let sessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
 
                 if (!sessions || sessions.length === 0) {
-                    scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black">NO CALENDAR DATA FOUND FOR ${currentYear}.</td></tr>`;
+                    container.innerHTML = `<div class="loading-state montserrat-black">NO CALENDAR DATA FOUND FOR ${currentYear}.</div>`;
                     return;
                 }
 
-                sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
-                cachedSessions = sessions;
-                renderCalendarTable(sessions);
+                // Grouping sesi berdasarkan round_number atau location jika round_number kosong
+                const roundsMap = {};
+                sessions.forEach(s => {
+                    let rNum = s.round_number || 0;
+                    let key = rNum > 0 ? `round_${rNum}` : `loc_${s.location}`;
+                    
+                    if (!roundsMap[key]) {
+                        roundsMap[key] = {
+                            roundNumber: rNum,
+                            location: s.location ? s.location.toUpperCase() : 'UNKNOWN GP',
+                            country: s.country_name ? s.country_name.toUpperCase() : '-',
+                            sessions: []
+                        };
+                    }
+                    roundsMap[key].sessions.push(s);
+                });
+
+                // Urutkan rounds
+                let roundsArray = Object.values(roundsMap).sort((a, b) => a.roundNumber - b.roundNumber);
+                cachedRounds = roundsArray;
+                renderCalendarAccordion(roundsArray);
 
             } catch (err) {
                 console.error("Calendar Error:", err);
-                scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD RACE CALENDAR. RETRYING SHORTLY...</td></tr>`;
-                setTimeout(fetchRaceCalendar, 5000); // Otomatis coba lagi setelah 5 detik
+                container.innerHTML = `<div class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD RACE CALENDAR. RETRYING SHORTLY...</div>`;
+                setTimeout(fetchRaceCalendar, 5000);
             }
         }
 
-        function renderCalendarTable(sessions) {
-            const scheduleBody = document.getElementById('schedule-body');
-            scheduleBody.innerHTML = sessions.map((s, index) => {
-                const dateFormatted = formatZonedTime(s.date_start, currentTimezone);
+        // Render Accordion Kalender
+        function renderCalendarAccordion(rounds) {
+            const container = document.getElementById('schedule-accordion');
+            
+            container.innerHTML = rounds.map((r, idx) => {
+                // Urutkan sesi dalam round berdasarkan waktu mulai
+                r.sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+
+                let sessionsHtml = r.sessions.map(s => {
+                    let formattedTime = formatZonedTime(s.date_start, currentTimezone);
+                    let sessionTitle = s.session_name ? s.session_name.toUpperCase() : 'SESSION';
+                    return `
+                        <tr>
+                            <td class="montserrat-black" style="width: 25%; color: var(--text-white);">
+                                <span class="tyre-badge">${sessionTitle}</span>
+                            </td>
+                            <td style="font-family: monospace; color: var(--text-muted);">${formattedTime}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                let roundLabel = r.roundNumber > 0 ? `ROUND ${r.roundNumber}` : `TESTING`;
+
                 return `
-                    <tr>
-                        <td class="montserrat-black" style="color: var(--text-muted);">ROUND ${index + 1}</td>
-                        <td class="montserrat-black" style="font-size: 14px;">${s.location ? s.location.toUpperCase() : 'UNKNOWN'} GP</td>
-                        <td><span class="tyre-badge montserrat-black">${s.session_name ? s.session_name.toUpperCase() : 'SESSION'}</span></td>
-                        <td style="font-family: monospace; font-size: 12px;">${dateFormatted}</td>
-                        <td class="montserrat-black" style="color: var(--text-muted);">${s.country_name ? s.country_name.toUpperCase() : '-'}</td>
-                    </tr>
+                    <div class="accordion-item" id="accordion-item-${idx}">
+                        <div class="accordion-header" onclick="toggleAccordion(${idx})">
+                            <div class="round-info-group">
+                                <span class="accordion-round-num montserrat-black">${roundLabel}</span>
+                                <span class="accordion-gp-title montserrat-black">${r.location} GP</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span class="accordion-country montserrat-black">${r.country}</span>
+                                <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                            </div>
+                        </div>
+                        <div class="accordion-content">
+                            <table class="session-sub-table">
+                                <tbody>
+                                    ${sessionsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 `;
             }).join('');
+        }
+
+        // Toggle Buka Tutup Accordion
+        function toggleAccordion(idx) {
+            const item = document.getElementById(`accordion-item-${idx}`);
+            if (item) {
+                item.classList.toggle('open');
+            }
         }
 
         // Update Track Status dari Race Control
@@ -792,7 +926,6 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Fetch paralel seluruh data endpoint secara aman
                 const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
                     fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`),
@@ -904,7 +1037,6 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
-                // Jangan override tabel kalau data sebelumnya sudah ada agar tampilan tidak mendadak kosong
             }
         }
 
