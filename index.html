@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,900;1,900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS (Opsional untuk styling bagian prediksi) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
@@ -154,7 +156,7 @@
             padding: 0 20px;
         }
 
-        /* NEXT RACE BANNER (DYNAMIC COUNTDOWN/INFO) */
+        /* NEXT RACE BANNER */
         .next-race-banner {
             background: linear-gradient(135deg, #141414 0%, #1f1f1f 100%);
             border: 2px solid var(--accent-red);
@@ -560,7 +562,7 @@
         <!-- VIEW 1: LIVE TIMING & DASHBOARD -->
         <div id="view-timing" class="view-section active-view">
             
-            <!-- NEXT RACE BANNER (AUTOMATICALLY GENERATED) -->
+            <!-- NEXT RACE BANNER -->
             <div class="next-race-banner" id="next-race-banner">
                 <div>
                     <span class="next-race-tag montserrat-black">NEXT UP</span>
@@ -762,7 +764,7 @@
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body" class="divide-y divide-[#262626]">
-                                <!-- Data tebakan bakal masuk lewat Javascript secara otomatis -->
+                                <!-- Data tebakan masuk lewat Javascript otomatis -->
                             </tbody>
                         </table>
                     </div>
@@ -777,7 +779,7 @@
                     <span class="status-badge montserrat-black">OFFICIAL CALENDAR 2026 (UPDATED)</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Jadwal resmi 2026 berdasarkan pembaruan terbaru (Saudi canceled, Bahrain dipindah ke Malaysia, Azerbaijan, dll).
+                        Jadwal resmi 2026 berdasarkan pembaruan terbaru.
                     </p>
                 </div>
             </div>
@@ -803,7 +805,6 @@
         let scheduleLoaded = false;
         let cachedRounds = [];
 
-        // Master Kalender Resmi F1 2026 Dengan Koreksi Jam Baku WIB Sesuai Permintaan
         const officialCalendar2026 = [
             { roundNumber: 1, location: "AUSTRALIA GP", country: "AUSTRALIA", sessions: [
                 { session_name: "Practice 1", date_start: "2026-03-06T08:30:00Z" },
@@ -971,7 +972,6 @@
             ]}
         ];
 
-        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry & Error Shield
         async function fetchWithRetry(url, retries = 2, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -985,7 +985,6 @@
             }
         }
 
-        // Fungsi Switcher Tampilan
         function switchView(viewName) {
             const viewTiming = document.getElementById('view-timing');
             const viewSchedule = document.getElementById('view-schedule');
@@ -1010,7 +1009,6 @@
             }
         }
 
-        // Ganti Zona Waktu
         function changeTimezone(tz) {
             currentTimezone = tz;
             updateNextRaceBanner();
@@ -1019,72 +1017,43 @@
             }
         }
 
-        // Format Waktu Menggunakan Offset Statis Khusus WIB (UTC+7) Biar Anti-Meleset
         function formatZonedTime(utcString, tz) {
             if (!utcString) return 'TBA';
-            
             if (tz === 'Asia/Jakarta') {
                 const date = new Date(utcString);
                 const wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-                
                 const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-                
-                const dayName = days[wibDate.getUTCDay()];
-                const day = String(wibDate.getUTCDate()).padStart(2, '0');
-                const month = months[wibDate.getUTCMonth()];
-                const year = wibDate.getUTCFullYear();
-                const hours = String(wibDate.getUTCHours()).padStart(2, '0');
-                const mins = String(wibDate.getUTCMinutes()).padStart(2, '0');
-                
-                return `${dayName}, ${day} ${month} ${year}, ${hours}.${mins}`;
+                return `${days[wibDate.getUTCDay()]}, ${String(wibDate.getUTCDate()).padStart(2, '0')} ${months[wibDate.getUTCMonth()]} ${wibDate.getUTCFullYear()}, ${String(wibDate.getUTCHours()).padStart(2, '0')}.${String(wibDate.getUTCMinutes()).padStart(2, '0')}`;
             }
-
-            const date = new Date(utcString);
             return new Intl.DateTimeFormat('id-ID', {
-                timeZone: tz,
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).format(date);
+                timeZone: tz, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+            }).format(new Date(utcString));
         }
 
-        // Update Banner Balapan Berikutnya & Hitung Mundur Otomatis
         function updateNextRaceBanner() {
             const now = new Date();
             let nextRace = null;
-
             for (let r of officialCalendar2026) {
                 if (r.canceled) continue;
                 const raceSession = r.sessions.find(s => s.session_name === "Race");
                 if (raceSession && raceSession.date_start) {
-                    const raceDate = new Date(raceSession.date_start);
-                    if (raceDate > now) {
+                    if (new Date(raceSession.date_start) > now) {
                         nextRace = { round: r.roundNumber, location: r.location, date: raceSession.date_start };
                         break;
                     }
                 }
             }
-
             if (nextRace) {
                 document.getElementById('next-race-name').innerText = `ROUND ${nextRace.round}: ${nextRace.location}`;
                 document.getElementById('next-race-date').innerText = `Jadwal Utama: ${formatZonedTime(nextRace.date, currentTimezone)}`;
-
-                const targetTime = new Date(nextRace.date).getTime();
-                const diff = targetTime - now.getTime();
-
+                const diff = new Date(nextRace.date).getTime() - now.getTime();
                 if (diff > 0) {
                     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    document.getElementById('countdown-timer').innerText = 
-                        `${days}D ${String(hours).padStart(2,'0')}H ${String(mins).padStart(2,'0')}M ${String(secs).padStart(2,'0')}S`;
+                    document.getElementById('countdown-timer').innerText = `${days}D ${String(hours).padStart(2,'0')}H ${String(mins).padStart(2,'0')}M ${String(secs).padStart(2,'0')}S`;
                 } else {
                     document.getElementById('countdown-timer').innerText = "RACE IN PROGRESS / COMPLETED";
                 }
@@ -1095,44 +1064,28 @@
             }
         }
 
-        // Fetch Jadwal Kalender
         async function fetchRaceCalendar() {
             cachedRounds = officialCalendar2026;
             renderCalendarAccordion(officialCalendar2026);
         }
 
-        // Render Accordion Kalender
         function renderCalendarAccordion(rounds) {
             const container = document.getElementById('schedule-accordion');
-            
             container.innerHTML = rounds.map((r, idx) => {
-                let sessionsHtml = "";
-                if (r.canceled) {
-                    sessionsHtml = `<tr><td colspan="2" style="color: var(--accent-red); font-family: monospace;">EVENT CANCELED</td></tr>`;
-                } else {
-                    sessionsHtml = r.sessions.map(s => {
-                        let formattedTime = formatZonedTime(s.date_start, currentTimezone);
-                        let sessionTitle = s.session_name ? s.session_name.toUpperCase() : 'SESSION';
-                        return `
-                            <tr>
-                                <td class="montserrat-black" style="width: 35%; color: var(--text-white);">
-                                    <span class="tyre-badge">${sessionTitle}</span>
-                                </td>
-                                <td style="font-family: monospace; color: var(--text-muted);">${formattedTime}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                }
-
-                let roundLabel = `ROUND ${r.roundNumber}`;
-                let canceledBadge = r.canceled ? `<span class="badge-canceled montserrat-black">CANCELED</span>` : '';
+                let sessionsHtml = r.canceled ? `<tr><td colspan="2" style="color: var(--accent-red); font-family: monospace;">EVENT CANCELED</td></tr>` : 
+                    r.sessions.map(s => `
+                        <tr>
+                            <td class="montserrat-black" style="width: 35%; color: var(--text-white);"><span class="tyre-badge">${s.session_name.toUpperCase()}</span></td>
+                            <td style="font-family: monospace; color: var(--text-muted);">${formatZonedTime(s.date_start, currentTimezone)}</td>
+                        </tr>
+                    `).join('');
 
                 return `
                     <div class="accordion-item" id="accordion-item-${idx}">
                         <div class="accordion-header" onclick="toggleAccordion(${idx})">
                             <div class="round-info-group">
-                                <span class="accordion-round-num montserrat-black">${roundLabel}</span>
-                                <span class="accordion-gp-title montserrat-black">${r.location} ${canceledBadge}</span>
+                                <span class="accordion-round-num montserrat-black">ROUND ${r.roundNumber}</span>
+                                <span class="accordion-gp-title montserrat-black">${r.location} ${r.canceled ? '<span class="badge-canceled montserrat-black">CANCELED</span>' : ''}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <span class="accordion-country montserrat-black">${r.country}</span>
@@ -1140,37 +1093,27 @@
                             </div>
                         </div>
                         <div class="accordion-content">
-                            <table class="session-sub-table">
-                                <tbody>
-                                    ${sessionsHtml}
-                                </tbody>
-                            </table>
+                            <table class="session-sub-table"><tbody>${sessionsHtml}</tbody></table>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // Toggle Buka Tutup Accordion
         function toggleAccordion(idx) {
             const item = document.getElementById(`accordion-item-${idx}`);
-            if (item) {
-                item.classList.toggle('open');
-            }
+            if (item) item.classList.toggle('open');
         }
 
-        // Update Track Status dari Race Control
         function updateTrackStatus(raceControlMsgs) {
             const flagDot = document.getElementById('flag-dot');
             const flagText = document.getElementById('flag-text');
             if (!raceControlMsgs || raceControlMsgs.length === 0) return;
-
             const flagEvents = raceControlMsgs.filter(m => m.flag || (m.category === 'Flag') || (m.message && m.message.toUpperCase().includes('FLAG')));
             if (flagEvents.length > 0) {
                 const latestFlag = flagEvents[flagEvents.length - 1];
                 const msgUpper = latestFlag.message ? latestFlag.message.toUpperCase() : '';
                 const flagType = latestFlag.flag ? latestFlag.flag.toUpperCase() : '';
-
                 if (flagType === 'RED' || msgUpper.includes('RED FLAG')) {
                     flagDot.className = 'flag-dot red';
                     flagText.innerText = 'TRACK STATUS: RED FLAG (SESSION SUSPENDED)';
@@ -1184,7 +1127,6 @@
             }
         }
 
-        // Render Track Map via Canvas
         function renderTrackMap(locationsData, isOffline) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
@@ -1240,12 +1182,10 @@
             });
         }
 
-        // Fetch Live Timing dengan Penanganan Sesi Offline & Auto-Retry
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
                 let sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
-                
                 let targetSession = null;
                 let isOfflineMode = false;
 
@@ -1260,7 +1200,6 @@
                 if (isOfflineMode) {
                     const currentYear = new Date().getFullYear();
                     let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
-                    
                     if (yearSessions && yearSessions.length > 0) {
                         const races = yearSessions.filter(s => s.session_name && s.session_name.toLowerCase().includes('race'));
                         targetSession = races.length > 0 ? races[races.length - 1] : yearSessions[yearSessions.length - 1];
@@ -1323,9 +1262,7 @@
                 }
 
                 const driverMap = {};
-                drivers.forEach(d => {
-                    driverMap[d.driver_number] = { code: d.name_acronym || "DRV", fullName: d.full_name, team: d.team_name || "Team" };
-                });
+                drivers.forEach(d => { driverMap[d.driver_number] = { code: d.name_acronym || "DRV", fullName: d.full_name, team: d.team_name || "Team" }; });
 
                 const latestPositions = {};
                 positions.forEach(p => { latestPositions[p.driver_number] = p.position; });
@@ -1412,7 +1349,6 @@
             return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
-        // Inisialisasi Awal
         updateNextRaceBanner();
         setInterval(updateNextRaceBanner, 1000);
         fetchLiveTiming();
@@ -1425,10 +1361,7 @@
 
             if (!form || !tbody) return;
 
-            let predictions = JSON.parse(localStorage.getItem('eb_predictions')) || [
-                { name: "Kaizen (Admin EB)", p1: "Max Verstappen", p2: "Lando Norris", p3: "Charles Leclerc" },
-                { name: "Satria_F1", p1: "Oscar Piastri", p2: "Max Verstappen", p3: "George Russell" }
-            ];
+            let predictions = JSON.parse(localStorage.getItem('eb_predictions')) || [];
 
             function renderLeaderboard() {
                 tbody.innerHTML = '';
