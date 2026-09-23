@@ -147,6 +147,11 @@
             box-shadow: 0 0 8px var(--accent-green);
         }
 
+        .flag-dot.offline {
+            background-color: var(--text-muted);
+            box-shadow: none;
+        }
+
         /* MAIN LAYOUT GRID (DASHBOARD + TRACK MAP) */
         .dashboard-grid {
             display: grid;
@@ -438,7 +443,7 @@
             <div class="track-map-card">
                 <div class="map-header montserrat-black">
                     <span><i class="fa-solid fa-location-dot"></i> LIVE DRIVER TRACKER</span>
-                    <span style="color: var(--accent-green);">GPS SYNCED</span>
+                    <span id="map-status-label" style="color: var(--accent-green);">GPS SYNCED</span>
                 </div>
                 <div class="track-canvas-container">
                     <canvas id="trackCanvas"></canvas>
@@ -522,8 +527,7 @@
             }
         }
 
-        // Render Track Map & Driver Dots di Canvas
-        function renderTrackMap(locationsData) {
+        function renderTrackMap(locationsData, isOffline) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -533,15 +537,14 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (!locationsData || locationsData.length === 0) {
-                ctx.fillStyle = "#555";
+            if (isOffline || !locationsData || locationsData.length === 0) {
+                ctx.fillStyle = "#666";
                 ctx.font = "12px 'Plus Jakarta Sans'";
                 ctx.textAlign = "center";
-                ctx.fillText("WAITING FOR GPS LOCATION FEED...", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("CIRCUIT MAP OFFLINE (NO ACTIVE SESSION)", canvas.width / 2, canvas.height / 2);
                 return;
             }
 
-            // Ambil koordinat x dan y unik untuk menggambar layout sirkuit (jejak titik)
             let xCoords = locationsData.map(l => l.x);
             let yCoords = locationsData.map(l => l.y);
 
@@ -561,11 +564,10 @@
             function transform(x, y) {
                 return {
                     px: padding + (x - minX) * scale,
-                    py: canvas.height - (padding + (y - minY) * scale) // Flip Y axis
+                    py: canvas.height - (padding + (y - minY) * scale)
                 };
             }
 
-            // Gambar garis jalur sirkuit samar
             ctx.strokeStyle = "#222";
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -581,23 +583,19 @@
             });
             ctx.stroke();
 
-            // Petakan posisi terbaru tiap driver di atas sirkuit
             const latestDriverLocations = {};
             locationsData.forEach(l => {
-                // Ambil titik data GPS paling akhir dari tiap driver number
                 latestDriverLocations[l.driver_number] = l;
             });
 
             Object.values(latestDriverLocations).forEach(pos => {
                 let pt = transform(pos.x, pos.y);
                 
-                // Gambar titik mobil
                 ctx.fillStyle = "#00ff88";
                 ctx.beginPath();
                 ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Label nomor mobil
                 ctx.fillStyle = "#ffffff";
                 ctx.font = "9px 'Plus Jakarta Sans'";
                 ctx.fillText(pos.driver_number, pt.px + 6, pt.py + 3);
@@ -608,52 +606,69 @@
             const tableBody = document.getElementById('timing-body');
             
             try {
+                // Ambil daftar sesi terbaru
                 let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
                 let sessions = await sessionRes.json();
                 
-                let latestSession = null;
-                let isArchiveMode = false;
+                let targetSession = null;
+                let isOfflineMode = false;
 
                 if (sessions && sessions.length > 0) {
-                    latestSession = sessions[sessions.length - 1];
-                    const sessionDate = new Date(latestSession.date_end || latestSession.date_start);
+                    let latestLive = sessions[sessions.length - 1];
+                    const sessionDate = new Date(latestLive.date_end || latestLive.date_start);
                     const now = new Date();
+                    
+                    // Cek apakah jeda dari sesi terakhir lebih dari 3 hari (artinya sedang libur antar race week)
                     const diffDays = (now - sessionDate) / (1000 * 60 * 60 * 24);
 
-                    if (diffDays > 4) {
-                        isArchiveMode = true;
+                    if (diffDays > 3) {
+                        isOfflineMode = true;
+                    } else {
+                        targetSession = latestLive;
                     }
                 } else {
-                    isArchiveMode = true;
+                    isOfflineMode = true;
                 }
 
-                if (isArchiveMode) {
+                // Kalau sedang tidak ada race week (off-week/libur), tarik sesi "Race" terakhir yang datanya komplit (misal dari tahun terbaru)
+                if (isOfflineMode) {
                     let fallbackRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2024`);
                     let fallbackSessions = await fallbackRes.json();
                     if (fallbackSessions && fallbackSessions.length > 0) {
-                        latestSession = fallbackSessions[fallbackSessions.length - 1];
+                        targetSession = fallbackSessions[fallbackSessions.length - 1]; // Mengambil GP race terakhir sebelum libur
                     }
                 }
 
-                const sessionKey = latestSession.session_key;
+                const sessionKey = targetSession ? targetSession.session_key : null;
 
-                if (isArchiveMode) {
-                    document.getElementById('session-status').innerText = "OFF-SEASON / ARCHIVE MODE";
-                    document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()} (FINAL RESULT)`;
-                    document.getElementById('live-indicator-text').innerText = "● ARCHIVE RESULT";
-                    document.getElementById('live-indicator-text').style.color = "#ffcc00";
-                    document.getElementById('latency-display').innerText = "STATUS: HISTORICAL RACE DATA";
+                if (!sessionKey) {
+                    throw new Error("No session data available");
+                }
+
+                // Update Tampilan Header Berdasarkan Status Sesi
+                if (isOfflineMode) {
+                    document.getElementById('session-status').innerText = "OFFLINE";
+                    document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()} (LAST RACE RESULT)`;
+                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (LAST RESULT)";
+                    document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
+                    document.getElementById('latency-display').innerText = "STATUS: OFFLINE MODE";
+                    document.getElementById('flag-dot').className = "flag-dot offline";
+                    document.getElementById('flag-text').innerText = "TRACK STATUS: OFFLINE (WAITING FOR NEXT RACE WEEK)";
+                    document.getElementById('map-status-label').innerText = "STANDBY";
+                    document.getElementById('map-status-label').style.color = "var(--text-muted)";
                 } else {
                     document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
-                    document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()}`;
+                    document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
                     document.getElementById('latency-display').innerText = "LATENCY: ~0.3s (DIRECT TELEMETRY FEED)";
+                    document.getElementById('map-status-label').innerText = "GPS SYNCED";
+                    document.getElementById('map-status-label').style.color = "var(--accent-green)";
                 }
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Multithread Fetch Termasuk Lokasi GPS Track Map
+                // Tarik Data Sependukung Sesi Tersebut
                 const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes, locationRes] = await Promise.all([
                     fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/position?session_key=${sessionKey}`),
@@ -676,8 +691,8 @@
                 const intervals = intervalsRes ? await intervalsRes.json() : [];
                 const locations = locationRes ? await locationRes.json() : [];
 
-                // Render Peta Sirkuit & Posisi Pembalap
-                renderTrackMap(locations);
+                // Render Peta Track
+                renderTrackMap(locations, isOfflineMode);
 
                 if (weather && weather.length > 0) {
                     const latestW = weather[weather.length - 1];
@@ -691,10 +706,14 @@
                     const rcBox = document.getElementById('rc-messages');
                     const recentRc = raceControl.slice(-3).reverse();
                     rcBox.innerHTML = recentRc.map(msg => 
-                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
+                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'OFFLINE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
                     ).join('');
 
-                    updateTrackStatus(raceControl);
+                    if (!isOfflineMode) {
+                        updateTrackStatus(raceControl);
+                    }
+                } else {
+                    document.getElementById('rc-messages').innerHTML = `<div class="rc-item">[OFFLINE SYSTEM] NO ACTIVE RACE CONTROL FEED. SHOWING FINAL RESULT.</div>`;
                 }
 
                 const driverMap = {};
@@ -727,7 +746,7 @@
                 const sectorTimes = {};
                 laps.forEach(l => {
                     if (l.lap_duration) {
-                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number]) {
+                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLops[l.driver_number]) {
                             bestLaps[l.driver_number] = l.lap_duration;
                             sectorTimes[l.driver_number] = {
                                 s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
@@ -794,7 +813,7 @@
                 }).join('');
 
             } catch (err) {
-                console.error("Telemetry Fallback Error:", err);
+                console.error("Telemetry Error:", err);
             }
         }
 
