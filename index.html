@@ -925,9 +925,27 @@
             }
         }
 
-        // Format Waktu Berdasarkan Zona Waktu Pilihan
+        // Format Waktu Menggunakan Offset Statis Khusus WIB (UTC+7) Biar Anti-Meleset
         function formatZonedTime(utcString, tz) {
             if (!utcString) return 'TBA';
+            
+            if (tz === 'Asia/Jakarta') {
+                const date = new Date(utcString);
+                const wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+                
+                const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+                
+                const dayName = days[wibDate.getUTCDay()];
+                const day = String(wibDate.getUTCDate()).padStart(2, '0');
+                const month = months[wibDate.getUTCMonth()];
+                const year = wibDate.getUTCFullYear();
+                const hours = String(wibDate.getUTCHours()).padStart(2, '0');
+                const mins = String(wibDate.getUTCMinutes()).padStart(2, '0');
+                
+                return `${dayName}, ${day} ${month} ${year}, ${hours}.${mins}`;
+            }
+
             const date = new Date(utcString);
             return new Intl.DateTimeFormat('id-ID', {
                 timeZone: tz,
