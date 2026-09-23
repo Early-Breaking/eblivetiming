@@ -557,6 +557,20 @@
         let scheduleLoaded = false;
         let cachedSessions = [];
 
+        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry (Mengatasi limit/timeout server sesaat)
+        async function fetchWithRetry(url, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(res => setTimeout(res, delay * (i + 1)));
+                }
+            }
+        }
+
         // Fungsi Switcher Tampilan (Live Timing vs Calendar)
         function switchView(viewName) {
             const viewTiming = document.getElementById('view-timing');
@@ -606,13 +620,12 @@
             }).format(date);
         }
 
-        // Fetch Jadwal Race Otomatis dari API OpenF1
+        // Fetch Jadwal Race Otomatis dari API OpenF1 dengan Auto-Retry
         async function fetchRaceCalendar() {
             const scheduleBody = document.getElementById('schedule-body');
             try {
                 const currentYear = new Date().getFullYear();
-                let res = await fetch(`${API_BASE}/sessions?year=${currentYear}`);
-                let sessions = await res.json();
+                let sessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
 
                 if (!sessions || sessions.length === 0) {
                     scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black">NO CALENDAR DATA FOUND FOR ${currentYear}.</td></tr>`;
@@ -625,7 +638,8 @@
 
             } catch (err) {
                 console.error("Calendar Error:", err);
-                scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD RACE CALENDAR.</td></tr>`;
+                scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD RACE CALENDAR. RETRYING SHORTLY...</td></tr>`;
+                setTimeout(fetchRaceCalendar, 5000); // Otomatis coba lagi setelah 5 detik
             }
         }
 
@@ -726,12 +740,11 @@
             });
         }
 
-        // Fetch Live Timing dan Semua Endpoint OpenF1 Terkait
+        // Fetch Live Timing dengan Penanganan Sesi Offline & Auto-Retry
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
-                let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
-                let sessions = await sessionRes.json();
+                let sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
                 
                 let targetSession = null;
                 let isOfflineMode = false;
@@ -746,15 +759,13 @@
 
                 if (isOfflineMode) {
                     const currentYear = new Date().getFullYear();
-                    let fallbackRes = await fetch(`${API_BASE}/sessions?year=${currentYear}`);
-                    let yearSessions = await fallbackRes.json();
+                    let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
                     
                     if (yearSessions && yearSessions.length > 0) {
                         const races = yearSessions.filter(s => s.session_name && s.session_name.toLowerCase().includes('race'));
                         targetSession = races.length > 0 ? races[races.length - 1] : yearSessions[yearSessions.length - 1];
                     } else {
-                        let generalRes = await fetch(`${API_BASE}/sessions`);
-                        let allSessions = await generalRes.json();
+                        let allSessions = await fetchWithRetry(`${API_BASE}/sessions`);
                         targetSession = allSessions[allSessions.length - 1];
                     }
                 }
@@ -781,28 +792,18 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Mengambil data dari berbagai endpoint OpenF1 secara paralel
-                const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes, locationRes] = await Promise.all([
-                    fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
-                    fetch(`${API_BASE}/position?session_key=${sessionKey}`),
-                    fetch(`${API_BASE}/laps?session_key=${sessionKey}`),
-                    fetch(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => null)
+                // Fetch paralel seluruh data endpoint secara aman
+                const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
+                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => [])
                 ]);
-
-                const drivers = await driversRes.json();
-                const positions = await positionsRes.json();
-                const laps = await lapsRes.json();
-                const tyres = tyresRes ? await tyresRes.json() : [];
-                const raceControl = raceControlRes ? await raceControlRes.json() : [];
-                const pits = pitRes ? await pitRes.json() : [];
-                const weather = weatherRes ? await weatherRes.json() : [];
-                const intervals = intervalsRes ? await intervalsRes.json() : [];
-                const locations = locationRes ? await locationRes.json() : [];
 
                 renderTrackMap(locations, isOfflineMode);
 
@@ -903,7 +904,7 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="12" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD SESSION DATA.</td></tr>`;
+                // Jangan override tabel kalau data sebelumnya sudah ada agar tampilan tidak mendadak kosong
             }
         }
 
