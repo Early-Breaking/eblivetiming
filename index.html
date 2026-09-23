@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EARLY BRAKING MOTORSPORT - Live Telemetry & Timing</title>
+    <title>EARLY BRAKING MOTORSPORT - Live Telemetry, Timing & Track Map</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -147,6 +147,20 @@
             box-shadow: 0 0 8px var(--accent-green);
         }
 
+        /* MAIN LAYOUT GRID (DASHBOARD + TRACK MAP) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* SESSION INFO CARD */
         .session-card {
             background-color: var(--surface-black);
@@ -203,6 +217,45 @@
         .btn-refresh:hover {
             background-color: var(--text-white);
             color: #000;
+        }
+
+        /* CIRCUIT MAP CARD */
+        .track-map-card {
+            background-color: var(--surface-black);
+            border: 1px solid var(--border-gray);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .map-header {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-gray);
+            padding-bottom: 8px;
+        }
+
+        .track-canvas-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background-color: #0d0d0d;
+            border: 1px solid var(--border-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #trackCanvas {
+            width: 100%;
+            height: 100%;
         }
 
         /* RACE CONTROL FEED */
@@ -335,45 +388,65 @@
             <div class="flag-status-text montserrat-black" id="flag-status-text">
                 <span class="flag-dot green" id="flag-dot"></span> <span id="flag-text">TRACK STATUS: GREEN FLAG (TRACK CLEAR)</span>
             </div>
-            <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);">
+            <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);" id="latency-display">
                 LATENCY: ~0.3s (DIRECT TELEMETRY FEED)
             </div>
         </div>
 
-        <!-- SESSION HEADER -->
-        <div class="session-card">
-            <div class="session-info">
-                <span class="status-badge montserrat-black" id="session-status">SYNCING...</span>
-                <h1 class="montserrat-italic" id="session-title" style="font-size: 26px;">FETCHING SESSION...</h1>
-                <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                    Session Key: <span id="session-key-display">Latest</span> | 
-                    <span style="color: var(--accent-green); font-weight: 700;">● LIVE TELEMETRY</span>
-                </p>
+        <!-- SESSION HEADER & TRACK MAP GRID -->
+        <div class="dashboard-grid">
+            <!-- Sisi Kiri: Sesi & Weather -->
+            <div>
+                <div class="session-card" style="margin-bottom: 0; height: 100%;">
+                    <div class="session-info">
+                        <span class="status-badge montserrat-black" id="session-status">SYNCING...</span>
+                        <h1 class="montserrat-italic" id="session-title" style="font-size: 24px;">FETCHING SESSION...</h1>
+                        <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                            Session Key: <span id="session-key-display">Latest</span> | 
+                            <span id="live-indicator-text" style="color: var(--accent-green); font-weight: 700;">● LIVE TELEMETRY</span>
+                        </p>
+                    </div>
+
+                    <div class="track-stats" style="width: 100%; justify-content: space-around; border-left: none; border-top: 1px solid var(--border-gray); padding-left: 0; padding-top: 15px; margin-top: 15px;">
+                        <div class="stat-box">
+                            <div class="stat-label montserrat-black">AIR TEMP</div>
+                            <div class="stat-value montserrat-black" id="air-temp">--°C</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label montserrat-black">TRACK TEMP</div>
+                            <div class="stat-value montserrat-black" id="track-temp">--°C</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label montserrat-black">HUMIDITY</div>
+                            <div class="stat-value montserrat-black" id="humidity">--%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label montserrat-black">WIND SPEED</div>
+                            <div class="stat-value montserrat-black" id="wind-speed">-- M/S</div>
+                        </div>
+                    </div>
+
+                    <div style="width: 100%; display: flex; justify-content: flex-end;">
+                        <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
+                            <i class="fa-solid fa-rotate-right"></i> REFRESH
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- LIVE TRACK WEATHER -->
-            <div class="track-stats">
-                <div class="stat-box">
-                    <div class="stat-label montserrat-black">AIR TEMP</div>
-                    <div class="stat-value montserrat-black" id="air-temp">--°C</div>
+            <!-- Sisi Kanan: Mini Track Map Driver Tracker -->
+            <div class="track-map-card">
+                <div class="map-header montserrat-black">
+                    <span><i class="fa-solid fa-location-dot"></i> LIVE DRIVER TRACKER</span>
+                    <span style="color: var(--accent-green);">GPS SYNCED</span>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-label montserrat-black">TRACK TEMP</div>
-                    <div class="stat-value montserrat-black" id="track-temp">--°C</div>
+                <div class="track-canvas-container">
+                    <canvas id="trackCanvas"></canvas>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-label montserrat-black">HUMIDITY</div>
-                    <div class="stat-value montserrat-black" id="humidity">--%</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label montserrat-black">WIND SPEED</div>
-                    <div class="stat-value montserrat-black" id="wind-speed">-- M/S</div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; text-align: center;" class="montserrat-black">
+                    REAL-TIME CIRCUIT COORDINATE PLOTTER
                 </div>
             </div>
-
-            <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
-                <i class="fa-solid fa-rotate-right"></i> REFRESH
-            </button>
         </div>
 
         <!-- RACE CONTROL & STEWARDS FEED -->
@@ -417,14 +490,12 @@
     <script>
         const API_BASE = "https://api.openf1.org/v1";
 
-        // Logic Update Flag Status Dinamis
         function updateTrackStatus(raceControlMsgs) {
             const flagDot = document.getElementById('flag-dot');
             const flagText = document.getElementById('flag-text');
 
             if (!raceControlMsgs || raceControlMsgs.length === 0) return;
 
-            // Cari pesan flag terbaru dari race control feed
             const flagEvents = raceControlMsgs.filter(m => m.flag || (m.category === 'Flag') || (m.message && m.message.toUpperCase().includes('FLAG')));
             
             if (flagEvents.length > 0) {
@@ -451,28 +522,139 @@
             }
         }
 
+        // Render Track Map & Driver Dots di Canvas
+        function renderTrackMap(locationsData) {
+            const canvas = document.getElementById('trackCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!locationsData || locationsData.length === 0) {
+                ctx.fillStyle = "#555";
+                ctx.font = "12px 'Plus Jakarta Sans'";
+                ctx.textAlign = "center";
+                ctx.fillText("WAITING FOR GPS LOCATION FEED...", canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Ambil koordinat x dan y unik untuk menggambar layout sirkuit (jejak titik)
+            let xCoords = locationsData.map(l => l.x);
+            let yCoords = locationsData.map(l => l.y);
+
+            let minX = Math.min(...xCoords);
+            let maxX = Math.max(...xCoords);
+            let minY = Math.min(...yCoords);
+            let maxY = Math.max(...yCoords);
+
+            let padding = 30;
+            let rangeX = maxX - minX || 1;
+            let rangeY = maxY - minY || 1;
+
+            let scaleX = (canvas.width - padding * 2) / rangeX;
+            let scaleY = (canvas.height - padding * 2) / rangeY;
+            let scale = Math.min(scaleX, scaleY);
+
+            function transform(x, y) {
+                return {
+                    px: padding + (x - minX) * scale,
+                    py: canvas.height - (padding + (y - minY) * scale) // Flip Y axis
+                };
+            }
+
+            // Gambar garis jalur sirkuit samar
+            ctx.strokeStyle = "#222";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            let first = true;
+            locationsData.forEach(l => {
+                let pt = transform(l.x, l.y);
+                if (first) {
+                    ctx.moveTo(pt.px, pt.py);
+                    first = false;
+                } else {
+                    ctx.lineTo(pt.px, pt.py);
+                }
+            });
+            ctx.stroke();
+
+            // Petakan posisi terbaru tiap driver di atas sirkuit
+            const latestDriverLocations = {};
+            locationsData.forEach(l => {
+                // Ambil titik data GPS paling akhir dari tiap driver number
+                latestDriverLocations[l.driver_number] = l;
+            });
+
+            Object.values(latestDriverLocations).forEach(pos => {
+                let pt = transform(pos.x, pos.y);
+                
+                // Gambar titik mobil
+                ctx.fillStyle = "#00ff88";
+                ctx.beginPath();
+                ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label nomor mobil
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "9px 'Plus Jakarta Sans'";
+                ctx.fillText(pos.driver_number, pt.px + 6, pt.py + 3);
+            });
+        }
+
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             
             try {
-                // 1. Session Utama
                 let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
                 let sessions = await sessionRes.json();
                 
-                if (!sessions || sessions.length === 0) {
-                    sessionRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2023`);
-                    sessions = await sessionRes.json();
+                let latestSession = null;
+                let isArchiveMode = false;
+
+                if (sessions && sessions.length > 0) {
+                    latestSession = sessions[sessions.length - 1];
+                    const sessionDate = new Date(latestSession.date_end || latestSession.date_start);
+                    const now = new Date();
+                    const diffDays = (now - sessionDate) / (1000 * 60 * 60 * 24);
+
+                    if (diffDays > 4) {
+                        isArchiveMode = true;
+                    }
+                } else {
+                    isArchiveMode = true;
                 }
 
-                const latestSession = sessions[sessions.length - 1];
+                if (isArchiveMode) {
+                    let fallbackRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2024`);
+                    let fallbackSessions = await fallbackRes.json();
+                    if (fallbackSessions && fallbackSessions.length > 0) {
+                        latestSession = fallbackSessions[fallbackSessions.length - 1];
+                    }
+                }
+
                 const sessionKey = latestSession.session_key;
 
-                document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
-                document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()}`;
+                if (isArchiveMode) {
+                    document.getElementById('session-status').innerText = "OFF-SEASON / ARCHIVE MODE";
+                    document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()} (FINAL RESULT)`;
+                    document.getElementById('live-indicator-text').innerText = "● ARCHIVE RESULT";
+                    document.getElementById('live-indicator-text').style.color = "#ffcc00";
+                    document.getElementById('latency-display').innerText = "STATUS: HISTORICAL RACE DATA";
+                } else {
+                    document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
+                    document.getElementById('session-title').innerText = `${latestSession.location.toUpperCase()} GP - ${latestSession.session_name.toUpperCase()}`;
+                    document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
+                    document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
+                    document.getElementById('latency-display').innerText = "LATENCY: ~0.3s (DIRECT TELEMETRY FEED)";
+                }
+
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // 2. Multithread Fetch Data
-                const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes] = await Promise.all([
+                // Multithread Fetch Termasuk Lokasi GPS Track Map
+                const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes, locationRes] = await Promise.all([
                     fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/position?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/laps?session_key=${sessionKey}`),
@@ -480,7 +662,8 @@
                     fetch(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => null),
                     fetch(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => null),
                     fetch(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => null),
-                    fetch(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null)
+                    fetch(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null),
+                    fetch(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => null)
                 ]);
 
                 const drivers = await driversRes.json();
@@ -491,8 +674,11 @@
                 const pits = pitRes ? await pitRes.json() : [];
                 const weather = weatherRes ? await weatherRes.json() : [];
                 const intervals = intervalsRes ? await intervalsRes.json() : [];
+                const locations = locationRes ? await locationRes.json() : [];
 
-                // 3. Update Weather Data
+                // Render Peta Sirkuit & Posisi Pembalap
+                renderTrackMap(locations);
+
                 if (weather && weather.length > 0) {
                     const latestW = weather[weather.length - 1];
                     document.getElementById('air-temp').innerText = `${latestW.air_temperature}°C`;
@@ -501,7 +687,6 @@
                     document.getElementById('wind-speed').innerText = `${latestW.wind_speed} M/S`;
                 }
 
-                // 4. Update Race Control Feed & Dynamic Track Flag
                 if (raceControl && raceControl.length > 0) {
                     const rcBox = document.getElementById('rc-messages');
                     const recentRc = raceControl.slice(-3).reverse();
@@ -509,11 +694,9 @@
                         `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
                     ).join('');
 
-                    // Update Flag secara otomatis mengikuti server
                     updateTrackStatus(raceControl);
                 }
 
-                // 5. Driver Mapping
                 const driverMap = {};
                 drivers.forEach(d => {
                     driverMap[d.driver_number] = {
@@ -524,15 +707,12 @@
                     };
                 });
 
-                // 6. Latest Position
                 const latestPositions = {};
                 positions.forEach(p => { latestPositions[p.driver_number] = p.position; });
 
-                // 7. Pit Stop Counter
                 const pitMap = {};
                 pits.forEach(p => { pitMap[p.driver_number] = (pitMap[p.driver_number] || 0) + 1; });
 
-                // 8. Intervals & Gaps Mapping
                 const intervalMap = {};
                 if (intervals && intervals.length > 0) {
                     intervals.forEach(i => {
@@ -543,7 +723,6 @@
                     });
                 }
 
-                // 9. Lap & Sectors Mapping
                 const bestLaps = {};
                 const sectorTimes = {};
                 laps.forEach(l => {
@@ -560,7 +739,6 @@
                     }
                 });
 
-                // 10. Tyre Stints Mapping
                 const tyreMap = {};
                 tyres.forEach(t => {
                     tyreMap[t.driver_number] = {
@@ -569,7 +747,6 @@
                     };
                 });
 
-                // 11. Assembly Leaderboard
                 let leaderboard = [];
                 Object.keys(latestPositions).forEach(num => {
                     if (driverMap[num]) {
@@ -589,7 +766,6 @@
 
                 leaderboard.sort((a, b) => a.pos - b.pos);
 
-                // Render Table
                 tableBody.innerHTML = leaderboard.map((row) => {
                     let lapTimeFormatted = row.bestLap ? formatLapTime(row.bestLap) : "NO TIME";
 
@@ -618,7 +794,7 @@
                 }).join('');
 
             } catch (err) {
-                console.error("Telemetry Fetch Error:", err);
+                console.error("Telemetry Fallback Error:", err);
             }
         }
 
@@ -629,7 +805,6 @@
         }
 
         fetchLiveTiming();
-        // Menggunakan jeda 3999 ms (Trik Keramat EB Motorsport)
         setInterval(fetchLiveTiming, 3999);
     </script>
 </body>
