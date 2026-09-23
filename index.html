@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EARLY BRAKING MOTORSPORT - Live Telemetry, Timing & Track Map</title>
+    <title>EB MOTORSPORT - Live Telemetry, Timing & Race Calendar</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,6 +57,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .brand-logo {
@@ -95,6 +97,13 @@
             margin-top: 3px;
         }
 
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
         /* VIEW SWITCHER NAVBAR */
         .view-switcher {
             display: flex;
@@ -122,6 +131,17 @@
             color: var(--text-white);
         }
 
+        select {
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid var(--border-gray);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+        }
+
         /* CONTAINER */
         .container {
             max-width: 1400px;
@@ -138,6 +158,8 @@
             justify-content: space-between;
             align-items: center;
             background-color: #000;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .flag-status-text {
@@ -200,6 +222,7 @@
             gap: 25px;
             border-left: 1px solid var(--border-gray);
             padding-left: 25px;
+            flex-wrap: wrap;
         }
 
         .stat-box { text-align: center; }
@@ -355,13 +378,27 @@
                 <span class="brand-sub montserrat-black">EARLY BRAKING MOTORSPORT</span>
             </div>
         </a>
-        <div class="view-switcher">
-            <button class="btn-switch active montserrat-black" id="btn-view-timing" onclick="switchView('timing')">
-                <i class="fa-solid fa-gauge-high"></i> LIVE TIMING
-            </button>
-            <button class="btn-switch montserrat-black" id="btn-view-schedule" onclick="switchView('schedule')">
-                <i class="fa-solid fa-calendar-days"></i> RACE CALENDAR
-            </button>
+        <div class="header-controls">
+            <!-- Zona Waktu Selector -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="timezone-select" style="font-size: 11px; color: var(--text-muted);" class="montserrat-black">ZONA WAKTU:</label>
+                <select id="timezone-select" onchange="changeTimezone(this.value)">
+                    <option value="Asia/Jakarta">WIB (Jakarta)</option>
+                    <option value="Asia/Tokyo">JST (Tokyo)</option>
+                    <option value="Europe/London">GMT/BST (London)</option>
+                    <option value="America/New_York">EST/EDT (New York)</option>
+                    <option value="UTC">UTC</option>
+                </select>
+            </div>
+            <!-- View Switcher -->
+            <div class="view-switcher">
+                <button class="btn-switch active montserrat-black" id="btn-view-timing" onclick="switchView('timing')">
+                    <i class="fa-solid fa-gauge-high"></i> LIVE TIMING
+                </button>
+                <button class="btn-switch montserrat-black" id="btn-view-schedule" onclick="switchView('schedule')">
+                    <i class="fa-solid fa-calendar-days"></i> RACE CALENDAR
+                </button>
+            </div>
         </div>
     </header>
 
@@ -472,14 +509,14 @@
             </div>
         </div>
 
-        <!-- VIEW 2: RACE CALENDAR (JADWAL MUSIM) -->
+        <!-- VIEW 2: RACE CALENDAR (JADWAL MUSIM DENGAN TIMEZONE) -->
         <div id="view-schedule" class="view-section">
             <div class="session-card" style="margin-bottom: 25px;">
                 <div class="session-info">
-                    <span class="status-badge montserrat-black">OFFICIAL SCHEDULE</span>
+                    <span class="status-badge montserrat-black">OFFICIAL SCHEDULE 2026</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Loaded directly from OpenF1 Database for the current season.
+                        Jadwal otomatis disesuaikan dengan zona waktu pilihan di pojok kanan atas.
                     </p>
                 </div>
             </div>
@@ -516,7 +553,9 @@
 
     <script>
         const API_BASE = "https://api.openf1.org/v1";
+        let currentTimezone = 'Asia/Jakarta';
         let scheduleLoaded = false;
+        let cachedSessions = [];
 
         // Fungsi Switcher Tampilan (Live Timing vs Calendar)
         function switchView(viewName) {
@@ -536,7 +575,6 @@
                 btnTiming.className = "btn-switch montserrat-black";
                 btnSchedule.className = "btn-switch active montserrat-black";
 
-                // Load kalender kalau belum pernah di-load
                 if (!scheduleLoaded) {
                     fetchRaceCalendar();
                     scheduleLoaded = true;
@@ -544,7 +582,31 @@
             }
         }
 
-        // Fungsi Fetch Jadwal Race Otomatis dari API OpenF1
+        // Ganti Zona Waktu
+        function changeTimezone(tz) {
+            currentTimezone = tz;
+            if (scheduleLoaded && cachedSessions.length > 0) {
+                renderCalendarTable(cachedSessions);
+            }
+        }
+
+        // Format Waktu Berdasarkan Zona Waktu Pilihan
+        function formatZonedTime(utcString, tz) {
+            if (!utcString) return 'TBA';
+            const date = new Date(utcString);
+            return new Intl.DateTimeFormat('id-ID', {
+                timeZone: tz,
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(date);
+        }
+
+        // Fetch Jadwal Race Otomatis dari API OpenF1
         async function fetchRaceCalendar() {
             const scheduleBody = document.getElementById('schedule-body');
             try {
@@ -557,25 +619,9 @@
                     return;
                 }
 
-                // Urutkan berdasarkan tanggal mulai sesi
                 sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
-
-                scheduleBody.innerHTML = sessions.map((s, index) => {
-                    const dateFormatted = s.date_start ? new Date(s.date_start).toLocaleString('id-ID', { 
-                        dateStyle: 'full', 
-                        timeStyle: 'short' 
-                    }) : 'TBA';
-
-                    return `
-                        <tr>
-                            <td class="montserrat-black" style="color: var(--text-muted);">ROUND ${index + 1}</td>
-                            <td class="montserrat-black" style="font-size: 14px;">${s.location ? s.location.toUpperCase() : 'UNKNOWN'} GP</td>
-                            <td><span class="tyre-badge montserrat-black">${s.session_name ? s.session_name.toUpperCase() : 'SESSION'}</span></td>
-                            <td style="font-family: monospace; font-size: 12px;">${dateFormatted}</td>
-                            <td class="montserrat-black" style="color: var(--text-muted);">${s.country_name ? s.country_name.toUpperCase() : '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
+                cachedSessions = sessions;
+                renderCalendarTable(sessions);
 
             } catch (err) {
                 console.error("Calendar Error:", err);
@@ -583,7 +629,23 @@
             }
         }
 
-        // Kode Live Timing Tetap Sama Seperti Sebelumnya
+        function renderCalendarTable(sessions) {
+            const scheduleBody = document.getElementById('schedule-body');
+            scheduleBody.innerHTML = sessions.map((s, index) => {
+                const dateFormatted = formatZonedTime(s.date_start, currentTimezone);
+                return `
+                    <tr>
+                        <td class="montserrat-black" style="color: var(--text-muted);">ROUND ${index + 1}</td>
+                        <td class="montserrat-black" style="font-size: 14px;">${s.location ? s.location.toUpperCase() : 'UNKNOWN'} GP</td>
+                        <td><span class="tyre-badge montserrat-black">${s.session_name ? s.session_name.toUpperCase() : 'SESSION'}</span></td>
+                        <td style="font-family: monospace; font-size: 12px;">${dateFormatted}</td>
+                        <td class="montserrat-black" style="color: var(--text-muted);">${s.country_name ? s.country_name.toUpperCase() : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update Track Status dari Race Control
         function updateTrackStatus(raceControlMsgs) {
             const flagDot = document.getElementById('flag-dot');
             const flagText = document.getElementById('flag-text');
@@ -608,6 +670,7 @@
             }
         }
 
+        // Render Track Map via Canvas
         function renderTrackMap(locationsData, isOffline) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
@@ -663,6 +726,7 @@
             });
         }
 
+        // Fetch Live Timing dan Semua Endpoint OpenF1 Terkait
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
@@ -717,6 +781,7 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
+                // Mengambil data dari berbagai endpoint OpenF1 secara paralel
                 const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes, locationRes] = await Promise.all([
                     fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/position?session_key=${sessionKey}`),
@@ -848,8 +913,9 @@
             return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
+        // Inisialisasi awal saat load
         fetchLiveTiming();
-        setInterval(fetchLiveTiming, 3999);
+        setInterval(fetchLiveTiming, 4000);
     </script>
 </body>
 </html>
