@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EB MOTORSPORT - Live Telemetry, Timing & Race Calendar</title>
+    <title>EARLY BREAKING MOTORSPORT - Live Telemetry and Timing</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,12 +15,14 @@
         :root {
             --bg-black: #0a0a0a;
             --surface-black: #141414;
+            --surface-hover: #1c1c1c;
             --border-gray: #262626;
             --text-white: #ffffff;
             --text-muted: #888888;
             --accent-green: #00ff88;
             --accent-yellow: #ffcc00;
             --accent-red: #ff3333;
+            --accent-blue: #00d2ff;
         }
 
         * {
@@ -59,6 +61,9 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .brand-logo {
@@ -338,7 +343,7 @@
             white-space: nowrap;
         }
 
-        tr:hover { background-color: rgba(255, 255, 255, 0.03); }
+        tr:hover { background-color: var(--surface-hover); }
 
         .pos-cell { font-size: 15px; width: 40px; }
         .driver-code { font-size: 15px; letter-spacing: 1px; }
@@ -373,7 +378,7 @@
         }
 
         .accordion-header:hover {
-            background-color: #1a1a1a;
+            background-color: var(--surface-hover);
         }
 
         .round-info-group {
@@ -467,7 +472,7 @@
             <span class="eb-logo-box montserrat-italic">EB</span>
             <div class="brand-titles">
                 <span class="brand-main montserrat-black">MOTORSPORT</span>
-                <span class="brand-sub montserrat-black">EARLY BRAKING MOTORSPORT</span>
+                <span class="brand-sub montserrat-black">EARLY BRAKING MOTORSPORT ULTIMATE</span>
             </div>
         </a>
         <div class="header-controls">
@@ -608,7 +613,7 @@
                     <span class="status-badge montserrat-black">OFFICIAL SCHEDULE 2026</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Klik pada salah satu Grand Prix untuk melihat detail jadwal sesi dalam zona waktu pilihan Anda.
+                        Jadwal resmi terstruktur rapi per round dari OpenF1 API sesuai zona waktu pilihan Anda.
                     </p>
                 </div>
             </div>
@@ -634,7 +639,7 @@
         let scheduleLoaded = false;
         let cachedRounds = [];
 
-        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry
+        // Fungsi Fetch Aman dengan Mekanisme Auto-Retry & Error Shield
         async function fetchWithRetry(url, retries = 3, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -697,7 +702,7 @@
             }).format(date);
         }
 
-        // Fetch Jadwal Kalender & Kelompokkan per Round
+        // Fetch Jadwal Kalender & Kelompokkan per Round (Sudah difilter rapi tanpa testing numpuk)
         async function fetchRaceCalendar() {
             const container = document.getElementById('schedule-accordion');
             try {
@@ -709,24 +714,23 @@
                     return;
                 }
 
-                // Grouping sesi berdasarkan round_number atau location jika round_number kosong
+                let validSessions = sessions.filter(s => s.round_number && s.round_number > 0);
+
                 const roundsMap = {};
-                sessions.forEach(s => {
-                    let rNum = s.round_number || 0;
-                    let key = rNum > 0 ? `round_${rNum}` : `loc_${s.location}`;
+                validSessions.forEach(s => {
+                    let rNum = s.round_number;
                     
-                    if (!roundsMap[key]) {
-                        roundsMap[key] = {
+                    if (!roundsMap[rNum]) {
+                        roundsMap[rNum] = {
                             roundNumber: rNum,
                             location: s.location ? s.location.toUpperCase() : 'UNKNOWN GP',
                             country: s.country_name ? s.country_name.toUpperCase() : '-',
                             sessions: []
                         };
                     }
-                    roundsMap[key].sessions.push(s);
+                    roundsMap[rNum].sessions.push(s);
                 });
 
-                // Urutkan rounds
                 let roundsArray = Object.values(roundsMap).sort((a, b) => a.roundNumber - b.roundNumber);
                 cachedRounds = roundsArray;
                 renderCalendarAccordion(roundsArray);
@@ -743,7 +747,6 @@
             const container = document.getElementById('schedule-accordion');
             
             container.innerHTML = rounds.map((r, idx) => {
-                // Urutkan sesi dalam round berdasarkan waktu mulai
                 r.sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
 
                 let sessionsHtml = r.sessions.map(s => {
@@ -759,7 +762,7 @@
                     `;
                 }).join('');
 
-                let roundLabel = r.roundNumber > 0 ? `ROUND ${r.roundNumber}` : `TESTING`;
+                let roundLabel = `ROUND ${r.roundNumber}`;
 
                 return `
                     <div class="accordion-item" id="accordion-item-${idx}">
