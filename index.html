@@ -154,6 +154,52 @@
             padding: 0 20px;
         }
 
+        /* NEXT RACE BANNER (DYNAMIC COUNTDOWN/INFO) */
+        .next-race-banner {
+            background: linear-gradient(135deg, #141414 0%, #1f1f1f 100%);
+            border: 2px solid var(--accent-red);
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.15);
+        }
+
+        .next-race-tag {
+            background-color: var(--accent-red);
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 10px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+
+        .next-race-title {
+            font-size: 22px;
+            letter-spacing: 0.5px;
+        }
+
+        .next-race-details {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .next-race-countdown {
+            text-align: right;
+        }
+
+        .countdown-timer {
+            font-size: 20px;
+            font-family: monospace;
+            color: var(--accent-green);
+            margin-top: 4px;
+        }
+
         /* TRACK FLAG BANNER */
         .flag-banner {
             border: 2px solid var(--text-white);
@@ -422,7 +468,7 @@
         }
 
         .accordion-item.open .accordion-content {
-            max-height: 500px;
+            max-height: 600px;
             border-top: 1px solid var(--border-gray);
         }
 
@@ -439,6 +485,16 @@
 
         .session-sub-table tr:last-child td {
             border-bottom: none;
+        }
+
+        .badge-canceled {
+            background-color: var(--accent-red);
+            color: #fff;
+            padding: 2px 8px;
+            font-size: 9px;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            margin-left: 10px;
         }
 
         /* SECTIONS VIEW TOGGLE */
@@ -503,6 +559,20 @@
 
         <!-- VIEW 1: LIVE TIMING & DASHBOARD -->
         <div id="view-timing" class="view-section active-view">
+            
+            <!-- NEXT RACE BANNER (AUTOMATICALLY GENERATED) -->
+            <div class="next-race-banner" id="next-race-banner">
+                <div>
+                    <span class="next-race-tag montserrat-black">NEXT UP</span>
+                    <div class="next-race-title montserrat-black" id="next-race-name">LOADING NEXT GRAND PRIX...</div>
+                    <div class="next-race-details" id="next-race-date">Fetching schedule data...</div>
+                </div>
+                <div class="next-race-countdown">
+                    <div style="font-size: 10px; color: var(--text-muted); letter-spacing: 1px;" class="montserrat-black">RACE COUNTDOWN</div>
+                    <div class="countdown-timer montserrat-black" id="countdown-timer">--:--:--:--</div>
+                </div>
+            </div>
+
             <!-- TRACK FLAG BANNER -->
             <div class="flag-banner" id="flag-banner">
                 <div class="flag-status-text montserrat-black" id="flag-status-text">
@@ -610,10 +680,10 @@
         <div id="view-schedule" class="view-section">
             <div class="session-card" style="margin-bottom: 25px;">
                 <div class="session-info">
-                    <span class="status-badge montserrat-black">OFFICIAL SCHEDULE 2026</span>
+                    <span class="status-badge montserrat-black">OFFICIAL CALENDAR 2026 (UPDATED)</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Jadwal resmi musim 2026 terstruktur rapi per round sesuai zona waktu pilihan Anda.
+                        Jadwal resmi 2026 berdasarkan pembaruan terbaru (Saudi canceled, Bahrain dipindah ke Malaysia, Azerbaijan, dll).
                     </p>
                 </div>
             </div>
@@ -639,175 +709,171 @@
         let scheduleLoaded = false;
         let cachedRounds = [];
 
-        // Master Jadwal Kalender Resmi F1 2026 (Sesuai Urutan Kalender Resmi / Autosport)
+        // Master Kalender Resmi F1 2026 Sesuai Screenshot & Permintaan
         const officialCalendar2026 = [
-            { roundNumber: 1, location: "AUSTRALIA", country: "AUSTRALIA", sessions: [
-                { session_name: "Practice 1", date_start: "2026-03-06T01:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-03-06T05:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-03-07T01:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-03-07T05:00:00Z" },
-                { session_name: "Race", date_start: "2026-03-08T04:00:00Z" }
+            { roundNumber: 1, location: "AUSTRALIA GP", country: "AUSTRALIA", sessions: [
+                { session_name: "Practice 1", date_start: "2026-03-06T08:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-03-06T12:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-03-07T08:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-03-07T12:00:00Z" },
+                { session_name: "Race", date_start: "2026-03-08T11:00:00Z" }
             ]},
-            { roundNumber: 2, location: "CHINA", country: "CHINA", sessions: [
-                { session_name: "Practice 1", date_start: "2026-03-13T03:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-03-13T07:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-03-14T03:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-03-14T07:00:00Z" },
-                { session_name: "Race", date_start: "2026-03-15T07:00:00Z" }
+            { roundNumber: 2, location: "CHINESE GP", country: "CHINA", sessions: [
+                { session_name: "Practice 1", date_start: "2026-03-13T10:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-03-13T14:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-03-14T10:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-03-14T14:00:00Z" },
+                { session_name: "Race", date_start: "2026-03-15T14:00:00Z" }
             ]},
-            { roundNumber: 3, location: "JAPAN", country: "JAPAN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-03-27T02:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-03-27T06:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-03-28T02:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-03-28T06:00:00Z" },
-                { session_name: "Race", date_start: "2026-03-29T05:00:00Z" }
+            { roundNumber: 3, location: "JAPANESE GP", country: "JAPAN", sessions: [
+                { session_name: "Practice 1", date_start: "2026-03-27T09:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-03-27T13:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-03-28T09:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-03-28T13:00:00Z" },
+                { session_name: "Race", date_start: "2026-03-29T12:00:00Z" }
             ]},
-            { roundNumber: 4, location: "BAHRAIN", country: "BAHRAIN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-04-10T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-04-10T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-04-11T12:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-04-11T16:00:00Z" },
-                { session_name: "Race", date_start: "2026-04-12T15:00:00Z" }
+            { roundNumber: 4, location: "SAUDI ARABIAN GP", country: "SAUDI ARABIA", canceled: true, sessions: [
+                { session_name: "Status", date_start: null, note: "CANCELED" }
             ]},
-            { roundNumber: 5, location: "SAUDI ARABIA", country: "SAUDI ARABIA", sessions: [
-                { session_name: "Practice 1", date_start: "2026-04-17T13:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-04-17T17:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-04-18T13:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-04-18T17:00:00Z" },
-                { session_name: "Race", date_start: "2026-04-19T17:00:00Z" }
+            { roundNumber: 5, location: "MIAMI GP", country: "UNITED STATES", sessions: [
+                { session_name: "Practice 1", date_start: "2026-05-01T23:00:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-05-02T03:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-05-02T23:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-05-03T03:00:00Z" },
+                { session_name: "Race", date_start: "2026-05-04T00:00:00Z" }
             ]},
-            { roundNumber: 6, location: "MIAMI", country: "UNITED STATES", sessions: [
-                { session_name: "Practice 1", date_start: "2026-05-01T16:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-05-01T20:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-05-02T16:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-05-02T20:00:00Z" },
-                { session_name: "Race", date_start: "2026-05-03T20:00:00Z" }
+            { roundNumber: 6, location: "CANADIAN GP", country: "CANADA", sessions: [
+                { session_name: "Practice 1", date_start: "2026-05-22T23:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-05-23T03:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-05-23T23:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-05-24T03:00:00Z" },
+                { session_name: "Race", date_start: "2026-05-25T03:00:00Z" }
             ]},
-            { roundNumber: 7, location: "CANADA", country: "CANADA", sessions: [
-                { session_name: "Practice 1", date_start: "2026-05-22T17:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-05-22T21:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-05-23T16:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-05-23T20:00:00Z" },
-                { session_name: "Race", date_start: "2026-05-24T18:00:00Z" }
+            { roundNumber: 7, location: "MONACO GP", country: "MONACO", sessions: [
+                { session_name: "Practice 1", date_start: "2026-06-05T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-06-05T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-06-06T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-06-06T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-06-07T20:00:00Z" }
             ]},
-            { roundNumber: 8, location: "MONACO", country: "MONACO", sessions: [
-                { session_name: "Practice 1", date_start: "2026-06-05T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-06-05T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-06-06T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-06-06T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-06-07T13:00:00Z" }
+            { roundNumber: 8, location: "BARCELONA-CATALUNYA GP", country: "SPAIN", sessions: [
+                { session_name: "Practice 1", date_start: "2026-06-12T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-06-12T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-06-13T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-06-13T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-06-14T20:00:00Z" }
             ]},
-            { roundNumber: 9, location: "SPAIN (BARCELONA)", country: "SPAIN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-06-12T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-06-12T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-06-13T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-06-13T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-06-14T13:00:00Z" }
+            { roundNumber: 9, location: "AUSTRIAN GP", country: "AUSTRIA", sessions: [
+                { session_name: "Practice 1", date_start: "2026-06-26T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-06-26T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-06-27T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-06-27T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-06-28T20:00:00Z" }
             ]},
-            { roundNumber: 10, location: "AUSTRIA", country: "AUSTRIA", sessions: [
-                { session_name: "Practice 1", date_start: "2026-06-26T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-06-26T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-06-27T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-06-27T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-06-28T13:00:00Z" }
+            { roundNumber: 10, location: "BRITISH GP", country: "GREAT BRITAIN", sessions: [
+                { session_name: "Practice 1", date_start: "2026-07-03T18:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-07-03T22:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-07-04T18:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-07-04T22:00:00Z" },
+                { session_name: "Race", date_start: "2026-07-05T21:00:00Z" }
             ]},
-            { roundNumber: 11, location: "GREAT BRITAIN", country: "GREAT BRITAIN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-07-03T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-07-03T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-07-04T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-07-04T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-07-05T14:00:00Z" }
+            { roundNumber: 11, location: "BELGIAN GP", country: "BELGIUM", sessions: [
+                { session_name: "Practice 1", date_start: "2026-07-17T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-07-17T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-07-18T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-07-18T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-07-19T20:00:00Z" }
             ]},
-            { roundNumber: 12, location: "BELGIUM", country: "BELGIUM", sessions: [
-                { session_name: "Practice 1", date_start: "2026-07-17T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-07-17T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-07-18T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-07-18T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-07-19T13:00:00Z" }
+            { roundNumber: 12, location: "HUNGARIAN GP", country: "HUNGARY", sessions: [
+                { session_name: "Practice 1", date_start: "2026-07-24T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-07-24T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-07-25T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-07-25T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-07-26T20:00:00Z" }
             ]},
-            { roundNumber: 13, location: "HUNGARY", country: "HUNGARY", sessions: [
-                { session_name: "Practice 1", date_start: "2026-07-24T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-07-24T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-07-25T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-07-25T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-07-26T13:00:00Z" }
+            { roundNumber: 13, location: "DUTCH GP", country: "NETHERLANDS", sessions: [
+                { session_name: "Practice 1", date_start: "2026-08-21T17:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-08-21T21:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-08-22T17:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-08-22T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-08-23T20:00:00Z" }
             ]},
-            { roundNumber: 14, location: "NETHERLANDS", country: "NETHERLANDS", sessions: [
-                { session_name: "Practice 1", date_start: "2026-08-21T10:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-08-21T14:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-08-22T10:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-08-22T13:00:00Z" },
-                { session_name: "Race", date_start: "2026-08-23T13:00:00Z" }
+            { roundNumber: 14, location: "ITALIAN GP", country: "ITALY", sessions: [
+                { session_name: "Practice 1", date_start: "2026-09-04T17:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-09-04T21:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-09-05T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-09-05T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-09-06T20:00:00Z" }
             ]},
-            { roundNumber: 15, location: "ITALY", country: "ITALY", sessions: [
-                { session_name: "Practice 1", date_start: "2026-09-04T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-09-04T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-09-05T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-09-05T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-09-06T13:00:00Z" }
+            { roundNumber: 15, location: "SPANISH GP", country: "SPAIN", sessions: [
+                { session_name: "Practice 1", date_start: "2026-09-11T18:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-09-11T22:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-09-12T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-09-12T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-09-13T20:00:00Z" }
             ]},
-            { roundNumber: 16, location: "SPAIN (MADRID)", country: "SPAIN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-09-11T11:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-09-11T15:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-09-12T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-09-12T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-09-13T13:00:00Z" }
+            { roundNumber: 16, location: "AZERBAIJAN GP", country: "AZERBAIJAN", sessions: [
+                { session_name: "Practice 1", date_start: "2026-09-24T15:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-09-24T19:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-09-25T15:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-09-25T19:00:00Z" },
+                { session_name: "Race", date_start: "2026-09-26T18:00:00Z" }
             ]},
-            { roundNumber: 17, location: "AZERBAIJAN", country: "AZERBAIJAN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-09-24T09:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-09-24T13:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-09-25T09:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-09-25T13:00:00Z" },
-                { session_name: "Race", date_start: "2026-09-26T11:00:00Z" }
+            { roundNumber: 17, location: "BAHRAIN GP IN MALAYSIA", country: "BAHRAIN / MALAYSIA", sessions: [
+                { session_name: "Practice 1", date_start: "2026-10-02T10:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-10-02T14:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-10-03T09:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-10-03T14:00:00Z" },
+                { session_name: "Race", date_start: "2026-10-04T13:00:00Z" }
             ]},
-            { roundNumber: 18, location: "SINGAPORE", country: "SINGAPORE", sessions: [
-                { session_name: "Practice 1", date_start: "2026-10-09T09:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-10-09T13:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-10-10T09:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-10-10T13:00:00Z" },
-                { session_name: "Race", date_start: "2026-10-11T12:00:00Z" }
+            { roundNumber: 18, location: "SINGAPORE GP", country: "SINGAPORE", sessions: [
+                { session_name: "Practice 1", date_start: "2026-10-09T16:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-10-09T19:30:00Z" },
+                { session_name: "Sprint", date_start: "2026-10-10T16:00:00Z" },
+                { session_name: "Qualifying", date_start: "2026-10-10T20:00:00Z" },
+                { session_name: "Race", date_start: "2026-10-11T19:00:00Z" }
             ]},
-            { roundNumber: 19, location: "UNITED STATES", country: "UNITED STATES", sessions: [
-                { session_name: "Practice 1", date_start: "2026-10-23T17:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-10-23T21:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-10-24T18:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-10-24T22:00:00Z" },
-                { session_name: "Race", date_start: "2026-10-25T19:00:00Z" }
+            { roundNumber: 19, location: "UNITED STATES GP", country: "UNITED STATES", sessions: [
+                { session_name: "Practice 1", date_start: "2026-10-24T00:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-10-24T04:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-10-25T00:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-10-25T04:00:00Z" },
+                { session_name: "Race", date_start: "2026-10-26T03:00:00Z" }
             ]},
-            { roundNumber: 20, location: "MEXICO", country: "MEXICO", sessions: [
-                { session_name: "Practice 1", date_start: "2026-10-30T18:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-10-30T22:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-10-31T17:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-10-31T21:00:00Z" },
-                { session_name: "Race", date_start: "2026-11-01T20:00:00Z" }
+            { roundNumber: 20, location: "MEXICAN GP", country: "MEXICO", sessions: [
+                { session_name: "Practice 1", date_start: "2026-10-31T01:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-10-31T05:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-11-01T00:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-11-01T04:00:00Z" },
+                { session_name: "Race", date_start: "2026-11-02T03:00:00Z" }
             ]},
-            { roundNumber: 21, location: "BRAZIL", country: "BRAZIL", sessions: [
-                { session_name: "Practice 1", date_start: "2026-11-06T13:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-11-06T17:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-11-07T14:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-11-07T18:00:00Z" },
-                { session_name: "Race", date_start: "2026-11-08T17:00:00Z" }
+            { roundNumber: 21, location: "SAO PAULO GP", country: "BRAZIL", sessions: [
+                { session_name: "Practice 1", date_start: "2026-11-06T22:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-11-07T02:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-11-07T21:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-11-08T01:00:00Z" },
+                { session_name: "Race", date_start: "2026-11-09T00:00:00Z" }
             ]},
-            { roundNumber: 22, location: "LAS VEGAS", country: "UNITED STATES", sessions: [
-                { session_name: "Practice 1", date_start: "2026-11-20T02:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-11-20T06:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-11-21T02:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-11-21T06:00:00Z" },
-                { session_name: "Race", date_start: "2026-11-22T06:00:00Z" }
+            { roundNumber: 22, location: "LAS VEGAS GP", country: "UNITED STATES", sessions: [
+                { session_name: "Practice 1", date_start: "2026-11-20T07:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-11-20T11:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-11-21T07:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-11-21T11:00:00Z" },
+                { session_name: "Race", date_start: "2026-11-22T11:00:00Z" }
             ]},
-            { roundNumber: 23, location: "QATAR", country: "QATAR", sessions: [
-                { session_name: "Practice 1", date_start: "2026-11-27T13:30:00Z" },
-                { session_name: "Sprint Qualifying", date_start: "2026-11-27T17:30:00Z" },
-                { session_name: "Sprint", date_start: "2026-11-28T14:00:00Z" },
-                { session_name: "Qualifying", date_start: "2026-11-28T18:00:00Z" },
-                { session_name: "Race", date_start: "2026-11-29T16:00:00Z" }
+            { roundNumber: 23, location: "QATAR GP", country: "QATAR", sessions: [
+                { session_name: "Practice 1", date_start: "2026-11-27T20:30:00Z" },
+                { session_name: "Sprint Qualifying", date_start: "2026-11-28T00:00:00Z" },
+                { session_name: "Sprint", date_start: "2026-11-28T21:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-11-29T01:00:00Z" },
+                { session_name: "Race", date_start: "2026-11-29T23:00:00Z" }
             ]},
-            { roundNumber: 24, location: "ABU DHABI", country: "UNITED ARAB EMIRATES", sessions: [
-                { session_name: "Practice 1", date_start: "2026-12-04T09:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-12-04T13:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-12-05T10:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-12-05T14:00:00Z" },
-                { session_name: "Race", date_start: "2026-12-06T13:00:00Z" }
+            { roundNumber: 24, location: "ABU DHABI GP", country: "UNITED ARAB EMIRATES", sessions: [
+                { session_name: "Practice 1", date_start: "2026-12-04T16:30:00Z" },
+                { session_name: "Practice 2", date_start: "2026-12-04T20:00:00Z" },
+                { session_name: "Practice 3", date_start: "2026-12-05T17:30:00Z" },
+                { session_name: "Qualifying", date_start: "2026-12-05T21:00:00Z" },
+                { session_name: "Race", date_start: "2026-12-06T20:00:00Z" }
             ]}
         ];
 
@@ -853,6 +919,7 @@
         // Ganti Zona Waktu
         function changeTimezone(tz) {
             currentTimezone = tz;
+            updateNextRaceBanner();
             if (scheduleLoaded && cachedRounds.length > 0) {
                 renderCalendarAccordion(cachedRounds);
             }
@@ -874,7 +941,51 @@
             }).format(date);
         }
 
-        // Fetch Jadwal Kalender (Menggunakan master officialCalendar2026 yang dijamin urut)
+        // Update Banner Balapan Berikutnya & Hitung Mundur Otomatis
+        function updateNextRaceBanner() {
+            const now = new Date();
+            let nextRace = null;
+
+            // Cari balapan (Race session) masa depan pertama
+            for (let r of officialCalendar2026) {
+                if (r.canceled) continue;
+                const raceSession = r.sessions.find(s => s.session_name === "Race");
+                if (raceSession && raceSession.date_start) {
+                    const raceDate = new Date(raceSession.date_start);
+                    if (raceDate > now) {
+                        nextRace = { round: r.roundNumber, location: r.location, date: raceSession.date_start };
+                        break;
+                    }
+                }
+            }
+
+            if (nextRace) {
+                document.getElementById('next-race-name').innerText = `ROUND ${nextRace.round}: ${nextRace.location}`;
+                document.getElementById('next-race-date').innerText = `Jadwal Utama: ${formatZonedTime(nextRace.date, currentTimezone)}`;
+
+                // Hitung Mundur (Countdown)
+                const targetTime = new Date(nextRace.date).getTime();
+                const diff = targetTime - now.getTime();
+
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    document.getElementById('countdown-timer').innerText = 
+                        `${days}D ${String(hours).padStart(2,'0')}H ${String(mins).padStart(2,'0')}M ${String(secs).padStart(2,'0')}S`;
+                } else {
+                    document.getElementById('countdown-timer').innerText = "RACE IN PROGRESS / COMPLETED";
+                }
+            } else {
+                document.getElementById('next-race-name').innerText = "SEMESTA F1 2026 SELESAI";
+                document.getElementById('next-race-date').innerText = "Seluruh rangkaian Grand Prix musim ini telah usai.";
+                document.getElementById('countdown-timer').innerText = "00D 00H 00M 00S";
+            }
+        }
+
+        // Fetch Jadwal Kalender
         async function fetchRaceCalendar() {
             cachedRounds = officialCalendar2026;
             renderCalendarAccordion(officialCalendar2026);
@@ -885,27 +996,33 @@
             const container = document.getElementById('schedule-accordion');
             
             container.innerHTML = rounds.map((r, idx) => {
-                let sessionsHtml = r.sessions.map(s => {
-                    let formattedTime = formatZonedTime(s.date_start, currentTimezone);
-                    let sessionTitle = s.session_name ? s.session_name.toUpperCase() : 'SESSION';
-                    return `
-                        <tr>
-                            <td class="montserrat-black" style="width: 25%; color: var(--text-white);">
-                                <span class="tyre-badge">${sessionTitle}</span>
-                            </td>
-                            <td style="font-family: monospace; color: var(--text-muted);">${formattedTime}</td>
-                        </tr>
-                    `;
-                }).join('');
+                let sessionsHtml = "";
+                if (r.canceled) {
+                    sessionsHtml = `<tr><td colspan="2" style="color: var(--accent-red); font-family: monospace;">EVENT CANCELED</td></tr>`;
+                } else {
+                    sessionsHtml = r.sessions.map(s => {
+                        let formattedTime = formatZonedTime(s.date_start, currentTimezone);
+                        let sessionTitle = s.session_name ? s.session_name.toUpperCase() : 'SESSION';
+                        return `
+                            <tr>
+                                <td class="montserrat-black" style="width: 35%; color: var(--text-white);">
+                                    <span class="tyre-badge">${sessionTitle}</span>
+                                </td>
+                                <td style="font-family: monospace; color: var(--text-muted);">${formattedTime}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
 
                 let roundLabel = `ROUND ${r.roundNumber}`;
+                let canceledBadge = r.canceled ? `<span class="badge-canceled montserrat-black">CANCELED</span>` : '';
 
                 return `
                     <div class="accordion-item" id="accordion-item-${idx}">
                         <div class="accordion-header" onclick="toggleAccordion(${idx})">
                             <div class="round-info-group">
                                 <span class="accordion-round-num montserrat-black">${roundLabel}</span>
-                                <span class="accordion-gp-title montserrat-black">${r.location} GP</span>
+                                <span class="accordion-gp-title montserrat-black">${r.location} ${canceledBadge}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <span class="accordion-country montserrat-black">${r.country}</span>
@@ -1117,7 +1234,7 @@
                 const bestLaps = {};
                 const sectorTimes = {};
                 laps.forEach(l => {
-                    if (l.lap_duration && (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number])) {
+                    if (l.lap_duration && (!bestLaps[l.driver_number] || l.lap_duration < bestLops[l.driver_number])) {
                         bestLaps[l.driver_number] = l.lap_duration;
                         sectorTimes[l.driver_number] = {
                             s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
@@ -1185,7 +1302,9 @@
             return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
-        // Inisialisasi awal saat load
+        // Inisialisasi Awal
+        updateNextRaceBanner();
+        setInterval(updateNextRaceBanner, 1000); // Perbarui countdown setiap detik
         fetchLiveTiming();
         setInterval(fetchLiveTiming, 4000);
     </script>
