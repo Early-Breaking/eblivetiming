@@ -1230,8 +1230,16 @@
 
                 if (sessions && sessions.length > 0) {
                     let latestLive = sessions[sessions.length - 1];
-                    const diffDays = (new Date() - new Date(latestLive.date_end || latestLive.date_start)) / (1000 * 60 * 60 * 24);
-                    if (diffDays > 3) { isOfflineMode = true; } else { targetSession = latestLive; }
+                    const now = new Date();
+                    const sessionStart = new Date(latestLive.date_start);
+                    const sessionEnd = new Date(latestLive.date_end || latestLive.date_start);
+                    
+                    const diffDays = (now - sessionEnd) / (1000 * 60 * 60 * 24);
+                    if (diffDays > 3 || now < sessionStart) { 
+                        isOfflineMode = true; 
+                    } else { 
+                        targetSession = latestLive; 
+                    }
                 } else {
                     isOfflineMode = true;
                 }
@@ -1239,9 +1247,19 @@
                 if (isOfflineMode) {
                     const currentYear = new Date().getFullYear();
                     let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
+                    
                     if (yearSessions && yearSessions.length > 0) {
-                        const races = yearSessions.filter(s => s.session_name && s.session_name.toLowerCase().includes('race'));
-                        targetSession = races.length > 0 ? races[races.length - 1] : yearSessions[yearSessions.length - 1];
+                        const now = new Date();
+                        const completedRaces = yearSessions.filter(s => {
+                            const end = new Date(s.date_end || s.date_start);
+                            return s.session_name && s.session_name.toLowerCase().includes('race') && end <= now;
+                        });
+
+                        if (completedRaces.length > 0) {
+                            targetSession = completedRaces[completedRaces.length - 1];
+                        } else {
+                            targetSession = yearSessions[yearSessions.length - 1];
+                        }
                     } else {
                         let allSessions = await fetchWithRetry(`${API_BASE}/sessions`);
                         targetSession = allSessions[allSessions.length - 1];
@@ -1252,16 +1270,16 @@
                 if (!sessionKey) throw new Error("No session data available");
 
                 if (isOfflineMode) {
-                    document.getElementById('session-status').innerText = "OFFLINE";
-                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'RACE').toUpperCase()} (LATEST)`;
-                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (LATEST RESULT)";
+                    document.getElementById('session-status').innerText = "ARCHIVE / LATEST RESULT";
+                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'RACE').toUpperCase()}`;
+                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (MENAMPILKAN HASIL RACE SEBELUMNYA)";
                     document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
-                    document.getElementById('latency-display').innerText = "STATUS: OFFLINE MODE";
+                    document.getElementById('latency-display').innerText = "STATUS: ARSES DATA TERAKHIR";
                     document.getElementById('flag-dot').className = "flag-dot offline";
-                    document.getElementById('flag-text').innerText = "TRACK STATUS: OFFLINE";
-                    document.getElementById('map-status-label').innerText = "STANDBY";
+                    document.getElementById('flag-text').innerText = "TRACK STATUS: SESI SELESAI / OFFLINE";
+                    document.getElementById('map-status-label').innerText = "ARSIP GPS";
                 } else {
-                    document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
+                    document.getElementById('session-status').innerText = "LIVE STREAM ACTIVE";
                     document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
@@ -1341,7 +1359,7 @@
                     if (driverMap[num]) {
                         leaderboard.push({
                             pos: latestPositions[num], number: num, driver: driverMap[num],
-                            bestLap: bestLaps[num] || null, sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
+                            bestLap: bestLarpCheck(bestLaps[num]), sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
                             tyre: tyreMap[num] || { compound: "S", laps: 1 }, pits: pitMap[num] || 0,
                             gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
                         });
@@ -1386,6 +1404,10 @@
             const mins = Math.floor(seconds / 60);
             const secs = (seconds % 60).toFixed(3);
             return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function bestLarpCheck(val) {
+            return val ? val : null;
         }
 
         updateNextRaceBanner();
