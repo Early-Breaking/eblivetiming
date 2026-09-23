@@ -709,7 +709,7 @@
         let scheduleLoaded = false;
         let cachedRounds = [];
 
-        // Master Kalender Resmi F1 2026 Sesuai Screenshot & Permintaan
+        // Master Kalender Resmi F1 2026 Dengan Koreksi Jam Baku WIB Sesuai Permintaan
         const officialCalendar2026 = [
             { roundNumber: 1, location: "AUSTRALIA GP", country: "AUSTRALIA", sessions: [
                 { session_name: "Practice 1", date_start: "2026-03-06T08:30:00Z" },
@@ -813,11 +813,11 @@
                 { session_name: "Race", date_start: "2026-09-13T20:00:00Z" }
             ]},
             { roundNumber: 16, location: "AZERBAIJAN GP", country: "AZERBAIJAN", sessions: [
-                { session_name: "Practice 1", date_start: "2026-09-24T15:30:00Z" },
-                { session_name: "Practice 2", date_start: "2026-09-24T19:00:00Z" },
-                { session_name: "Practice 3", date_start: "2026-09-25T15:30:00Z" },
-                { session_name: "Qualifying", date_start: "2026-09-25T19:00:00Z" },
-                { session_name: "Race", date_start: "2026-09-26T18:00:00Z" }
+                { session_name: "Practice 1", date_start: "2026-09-24T08:30:00Z" }, // -> 15:30 WIB
+                { session_name: "Practice 2", date_start: "2026-09-24T12:00:00Z" }, // -> 19:00 WIB
+                { session_name: "Practice 3", date_start: "2026-09-25T08:30:00Z" }, // -> 15:30 WIB
+                { session_name: "Qualifying", date_start: "2026-09-25T12:00:00Z" }, // -> 19:00 WIB
+                { session_name: "Race", date_start: "2026-09-26T11:00:00Z" }       // -> 18:00 WIB
             ]},
             { roundNumber: 17, location: "BAHRAIN GP IN MALAYSIA", country: "BAHRAIN / MALAYSIA", sessions: [
                 { session_name: "Practice 1", date_start: "2026-10-02T10:30:00Z" },
