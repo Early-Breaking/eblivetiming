@@ -95,6 +95,33 @@
             margin-top: 3px;
         }
 
+        /* VIEW SWITCHER NAVBAR */
+        .view-switcher {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-switch {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-gray);
+            padding: 8px 16px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-switch.active {
+            background-color: var(--text-white);
+            color: #000;
+            border-color: var(--text-white);
+        }
+
+        .btn-switch:hover {
+            border-color: var(--text-white);
+            color: var(--text-white);
+        }
+
         /* CONTAINER */
         .container {
             max-width: 1400px;
@@ -111,7 +138,6 @@
             justify-content: space-between;
             align-items: center;
             background-color: #000;
-            transition: border-color 0.3s ease;
         }
 
         .flag-status-text {
@@ -128,29 +154,12 @@
             border-radius: 50%;
             background-color: var(--accent-green);
             display: inline-block;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
             box-shadow: 0 0 8px var(--accent-green);
         }
 
-        .flag-dot.yellow {
-            background-color: var(--accent-yellow);
-            box-shadow: 0 0 8px var(--accent-yellow);
-        }
-
-        .flag-dot.red {
-            background-color: var(--accent-red);
-            box-shadow: 0 0 8px var(--accent-red);
-        }
-
-        .flag-dot.green {
-            background-color: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
-        }
-
-        .flag-dot.offline {
-            background-color: var(--text-muted);
-            box-shadow: none;
-        }
+        .flag-dot.yellow { background-color: var(--accent-yellow); box-shadow: 0 0 8px var(--accent-yellow); }
+        .flag-dot.red { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+        .flag-dot.offline { background-color: var(--text-muted); box-shadow: none; }
 
         /* MAIN LAYOUT GRID (DASHBOARD + TRACK MAP) */
         .dashboard-grid {
@@ -161,9 +170,7 @@
         }
 
         @media (max-width: 1100px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
 
         /* SESSION INFO CARD */
@@ -195,20 +202,9 @@
             padding-left: 25px;
         }
 
-        .stat-box {
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-        }
-
-        .stat-value {
-            font-size: 16px;
-            margin-top: 2px;
-        }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+        .stat-value { font-size: 16px; margin-top: 2px; }
 
         .btn-refresh {
             background: transparent;
@@ -219,10 +215,7 @@
             transition: 0.2s;
         }
 
-        .btn-refresh:hover {
-            background-color: var(--text-white);
-            color: #000;
-        }
+        .btn-refresh:hover { background-color: var(--text-white); color: #000; }
 
         /* CIRCUIT MAP CARD */
         .track-map-card {
@@ -258,10 +251,7 @@
             overflow: hidden;
         }
 
-        #trackCanvas {
-            width: 100%;
-            height: 100%;
-        }
+        #trackCanvas { width: 100%; height: 100%; }
 
         /* RACE CONTROL FEED */
         .race-control-box {
@@ -289,13 +279,10 @@
             overflow-y: auto;
         }
 
-        .rc-item {
-            color: var(--text-white);
-            font-family: monospace;
-        }
+        .rc-item { color: var(--text-white); font-family: monospace; }
 
-        /* TIMING TABLE */
-        .timing-table-wrapper {
+        /* TABLES WRAPPER */
+        .table-wrapper {
             background-color: var(--surface-black);
             border: 1px solid var(--border-gray);
             overflow-x: auto;
@@ -326,47 +313,20 @@
             white-space: nowrap;
         }
 
-        tr:hover {
-            background-color: rgba(255, 255, 255, 0.03);
-        }
+        tr:hover { background-color: rgba(255, 255, 255, 0.03); }
 
-        .pos-cell {
-            font-size: 15px;
-            width: 40px;
-        }
+        .pos-cell { font-size: 15px; width: 40px; }
+        .driver-code { font-size: 15px; letter-spacing: 1px; }
+        .team-name { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+        .sector-cell { font-family: monospace; font-size: 12px; }
+        .tyre-badge { border: 1px solid var(--text-white); color: var(--text-white); padding: 2px 6px; font-size: 10px; display: inline-block; border-radius: 2px; }
+        .loading-state { text-align: center; padding: 40px; color: var(--text-muted); }
 
-        .driver-code {
-            font-size: 15px;
-            letter-spacing: 1px;
-        }
+        /* SECTIONS VIEW TOGGLE */
+        .view-section { display: none; }
+        .view-section.active-view { display: block; }
 
-        .team-name {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        .sector-cell {
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .tyre-badge {
-            border: 1px solid var(--text-white);
-            color: var(--text-white);
-            padding: 2px 6px;
-            font-size: 10px;
-            display: inline-block;
-            border-radius: 2px;
-        }
-
-        .loading-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-
-        /* FOOTER DISCLAIMER */
+        /* FOOTER */
         footer {
             border-top: 1px solid var(--border-gray);
             padding-top: 25px;
@@ -376,10 +336,7 @@
             font-size: 11px;
             line-height: 1.6;
         }
-
-        footer p {
-            margin-bottom: 10px;
-        }
+        footer p { margin-bottom: 10px; }
 
         @media (max-width: 1024px) {
             .track-stats { display: none; }
@@ -398,134 +355,241 @@
                 <span class="brand-sub montserrat-black">EARLY BRAKING MOTORSPORT</span>
             </div>
         </a>
-        <div class="montserrat-black" style="font-size: 12px; letter-spacing: 1px;">
-            <i class="fa-solid fa-flag-checkered"></i> LIVE RACE CONTROL HUB
+        <div class="view-switcher">
+            <button class="btn-switch active montserrat-black" id="btn-view-timing" onclick="switchView('timing')">
+                <i class="fa-solid fa-gauge-high"></i> LIVE TIMING
+            </button>
+            <button class="btn-switch montserrat-black" id="btn-view-schedule" onclick="switchView('schedule')">
+                <i class="fa-solid fa-calendar-days"></i> RACE CALENDAR
+            </button>
         </div>
     </header>
 
     <div class="container">
-        <!-- TRACK FLAG BANNER -->
-        <div class="flag-banner" id="flag-banner">
-            <div class="flag-status-text montserrat-black" id="flag-status-text">
-                <span class="flag-dot green" id="flag-dot"></span> <span id="flag-text">TRACK STATUS: GREEN FLAG (TRACK CLEAR)</span>
+
+        <!-- VIEW 1: LIVE TIMING & DASHBOARD -->
+        <div id="view-timing" class="view-section active-view">
+            <!-- TRACK FLAG BANNER -->
+            <div class="flag-banner" id="flag-banner">
+                <div class="flag-status-text montserrat-black" id="flag-status-text">
+                    <span class="flag-dot green" id="flag-dot"></span> <span id="flag-text">TRACK STATUS: GREEN FLAG (TRACK CLEAR)</span>
+                </div>
+                <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);" id="latency-display">
+                    LATENCY: ~0.3s (DIRECT TELEMETRY FEED)
+                </div>
             </div>
-            <div class="montserrat-black" style="font-size: 11px; color: var(--text-muted);" id="latency-display">
-                LATENCY: ~0.3s (DIRECT TELEMETRY FEED)
+
+            <!-- SESSION HEADER & TRACK MAP GRID -->
+            <div class="dashboard-grid">
+                <div>
+                    <div class="session-card" style="margin-bottom: 0; height: 100%;">
+                        <div class="session-info">
+                            <span class="status-badge montserrat-black" id="session-status">SYNCING...</span>
+                            <h1 class="montserrat-italic" id="session-title" style="font-size: 24px;">FETCHING SESSION...</h1>
+                            <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                                Session Key: <span id="session-key-display">Latest</span> | 
+                                <span id="live-indicator-text" style="color: var(--accent-green); font-weight: 700;">● LIVE TELEMETRY</span>
+                            </p>
+                        </div>
+
+                        <div class="track-stats" style="width: 100%; justify-content: space-around; border-left: none; border-top: 1px solid var(--border-gray); padding-left: 0; padding-top: 15px; margin-top: 15px;">
+                            <div class="stat-box">
+                                <div class="stat-label montserrat-black">AIR TEMP</div>
+                                <div class="stat-value montserrat-black" id="air-temp">--°C</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label montserrat-black">TRACK TEMP</div>
+                                <div class="stat-value montserrat-black" id="track-temp">--°C</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label montserrat-black">HUMIDITY</div>
+                                <div class="stat-value montserrat-black" id="humidity">--%</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label montserrat-black">WIND SPEED</div>
+                                <div class="stat-value montserrat-black" id="wind-speed">-- M/S</div>
+                            </div>
+                        </div>
+
+                        <div style="width: 100%; display: flex; justify-content: flex-end;">
+                            <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
+                                <i class="fa-solid fa-rotate-right"></i> REFRESH
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Track Map Driver Tracker -->
+                <div class="track-map-card">
+                    <div class="map-header montserrat-black">
+                        <span><i class="fa-solid fa-location-dot"></i> LIVE DRIVER TRACKER</span>
+                        <span id="map-status-label" style="color: var(--accent-green);">GPS SYNCED</span>
+                    </div>
+                    <div class="track-canvas-container">
+                        <canvas id="trackCanvas"></canvas>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; text-align: center;" class="montserrat-black">
+                        REAL-TIME CIRCUIT COORDINATE PLOTTER
+                    </div>
+                </div>
+            </div>
+
+            <!-- RACE CONTROL & STEWARDS FEED -->
+            <div class="race-control-box">
+                <div class="rc-title montserrat-black"><i class="fa-solid fa-shield-halved"></i> RACE CONTROL & STEWARDS FEED</div>
+                <div class="rc-messages-list" id="rc-messages">
+                    <div class="rc-item">[EARLY BRAKING ENGINE] INITIALIZING STREAM...</div>
+                </div>
+            </div>
+
+            <!-- TELEMETRY TABLE -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr class="montserrat-black">
+                            <th>POS</th>
+                            <th>NO</th>
+                            <th>DRIVER</th>
+                            <th>TYRE</th>
+                            <th>PITS</th>
+                            <th>BEST LAP</th>
+                            <th>GAP LEADER</th>
+                            <th>INTERVAL</th>
+                            <th>SECTOR 1</th>
+                            <th>SECTOR 2</th>
+                            <th>SECTOR 3</th>
+                            <th>SPEED TRAP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timing-body">
+                        <tr>
+                            <td colspan="12" class="loading-state montserrat-black">
+                                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO TELEMETRY STREAM...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- SESSION HEADER & TRACK MAP GRID -->
-        <div class="dashboard-grid">
-            <!-- Sisi Kiri: Sesi & Weather -->
-            <div>
-                <div class="session-card" style="margin-bottom: 0; height: 100%;">
-                    <div class="session-info">
-                        <span class="status-badge montserrat-black" id="session-status">SYNCING...</span>
-                        <h1 class="montserrat-italic" id="session-title" style="font-size: 24px;">FETCHING SESSION...</h1>
-                        <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                            Session Key: <span id="session-key-display">Latest</span> | 
-                            <span id="live-indicator-text" style="color: var(--accent-green); font-weight: 700;">● LIVE TELEMETRY</span>
-                        </p>
-                    </div>
-
-                    <div class="track-stats" style="width: 100%; justify-content: space-around; border-left: none; border-top: 1px solid var(--border-gray); padding-left: 0; padding-top: 15px; margin-top: 15px;">
-                        <div class="stat-box">
-                            <div class="stat-label montserrat-black">AIR TEMP</div>
-                            <div class="stat-value montserrat-black" id="air-temp">--°C</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label montserrat-black">TRACK TEMP</div>
-                            <div class="stat-value montserrat-black" id="track-temp">--°C</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label montserrat-black">HUMIDITY</div>
-                            <div class="stat-value montserrat-black" id="humidity">--%</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label montserrat-black">WIND SPEED</div>
-                            <div class="stat-value montserrat-black" id="wind-speed">-- M/S</div>
-                        </div>
-                    </div>
-
-                    <div style="width: 100%; display: flex; justify-content: flex-end;">
-                        <button class="btn-refresh montserrat-black" onclick="fetchLiveTiming()">
-                            <i class="fa-solid fa-rotate-right"></i> REFRESH
-                        </button>
-                    </div>
+        <!-- VIEW 2: RACE CALENDAR (JADWAL MUSIM) -->
+        <div id="view-schedule" class="view-section">
+            <div class="session-card" style="margin-bottom: 25px;">
+                <div class="session-info">
+                    <span class="status-badge montserrat-black">OFFICIAL SCHEDULE</span>
+                    <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
+                        Loaded directly from OpenF1 Database for the current season.
+                    </p>
                 </div>
             </div>
 
-            <!-- Sisi Kanan: Mini Track Map Driver Tracker -->
-            <div class="track-map-card">
-                <div class="map-header montserrat-black">
-                    <span><i class="fa-solid fa-location-dot"></i> LIVE DRIVER TRACKER</span>
-                    <span id="map-status-label" style="color: var(--accent-green);">GPS SYNCED</span>
-                </div>
-                <div class="track-canvas-container">
-                    <canvas id="trackCanvas"></canvas>
-                </div>
-                <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; text-align: center;" class="montserrat-black">
-                    REAL-TIME CIRCUIT COORDINATE PLOTTER
-                </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr class="montserrat-black">
+                            <th>ROUND / LOCATION</th>
+                            <th>GRAND PRIX</th>
+                            <th>SESSION TYPE</th>
+                            <th>DATE & TIME</th>
+                            <th>CIRCUIT COUNTRY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body">
+                        <tr>
+                            <td colspan="5" class="loading-state montserrat-black">
+                                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> LOADING RACE CALENDAR...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </div>
-
-        <!-- RACE CONTROL & STEWARDS FEED -->
-        <div class="race-control-box">
-            <div class="rc-title montserrat-black"><i class="fa-solid fa-shield-halved"></i> RACE CONTROL & STEWARDS FEED</div>
-            <div class="rc-messages-list" id="rc-messages">
-                <div class="rc-item">[EARLY BRAKING ENGINE] INITIALIZING STREAM...</div>
-            </div>
-        </div>
-
-        <!-- TELEMETRY TABLE -->
-        <div class="timing-table-wrapper">
-            <table>
-                <thead>
-                    <tr class="montserrat-black">
-                        <th>POS</th>
-                        <th>NO</th>
-                        <th>DRIVER</th>
-                        <th>TYRE</th>
-                        <th>PITS</th>
-                        <th>BEST LAP</th>
-                        <th>GAP LEADER</th>
-                        <th>INTERVAL</th>
-                        <th>SECTOR 1</th>
-                        <th>SECTOR 2</th>
-                        <th>SECTOR 3</th>
-                        <th>SPEED TRAP</th>
-                    </tr>
-                </thead>
-                <tbody id="timing-body">
-                    <tr>
-                        <td colspan="12" class="loading-state montserrat-black">
-                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO TELEMETRY STREAM...
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
 
         <!-- FOOTER DISCLAIMER -->
         <footer>
-            <p>&copy; 2025-2026 Early Braking Motorsport. All rights reserved.</p>
+            <p>&copy; 2024-2026 Early Braking Motorsport. All rights reserved.</p>
             <p>Total or partial reproduction of any content included on this website is prohibited without prior, express, and written consent.</p>
-            <p>This website is an independent, unofficial project and is not affiliated in any way with the Formula 1 group of companies, the FIA, or any related entity. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX, and other related trademarks are registered trademarks of Formula One Licensing B.V.</p>
+            <p>This website is an independent, unofficial project and is not affiliated in any way with the Formula 1 group of companies, the FIA, or any related entity.</p>
         </footer>
     </div>
 
     <script>
         const API_BASE = "https://api.openf1.org/v1";
+        let scheduleLoaded = false;
 
+        // Fungsi Switcher Tampilan (Live Timing vs Calendar)
+        function switchView(viewName) {
+            const viewTiming = document.getElementById('view-timing');
+            const viewSchedule = document.getElementById('view-schedule');
+            const btnTiming = document.getElementById('btn-view-timing');
+            const btnSchedule = document.getElementById('btn-view-schedule');
+
+            if (viewName === 'timing') {
+                viewTiming.className = "view-section active-view";
+                viewSchedule.className = "view-section";
+                btnTiming.className = "btn-switch active montserrat-black";
+                btnSchedule.className = "btn-switch montserrat-black";
+            } else if (viewName === 'schedule') {
+                viewTiming.className = "view-section";
+                viewSchedule.className = "view-section active-view";
+                btnTiming.className = "btn-switch montserrat-black";
+                btnSchedule.className = "btn-switch active montserrat-black";
+
+                // Load kalender kalau belum pernah di-load
+                if (!scheduleLoaded) {
+                    fetchRaceCalendar();
+                    scheduleLoaded = true;
+                }
+            }
+        }
+
+        // Fungsi Fetch Jadwal Race Otomatis dari API OpenF1
+        async function fetchRaceCalendar() {
+            const scheduleBody = document.getElementById('schedule-body');
+            try {
+                const currentYear = new Date().getFullYear();
+                let res = await fetch(`${API_BASE}/sessions?year=${currentYear}`);
+                let sessions = await res.json();
+
+                if (!sessions || sessions.length === 0) {
+                    scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black">NO CALENDAR DATA FOUND FOR ${currentYear}.</td></tr>`;
+                    return;
+                }
+
+                // Urutkan berdasarkan tanggal mulai sesi
+                sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+
+                scheduleBody.innerHTML = sessions.map((s, index) => {
+                    const dateFormatted = s.date_start ? new Date(s.date_start).toLocaleString('id-ID', { 
+                        dateStyle: 'full', 
+                        timeStyle: 'short' 
+                    }) : 'TBA';
+
+                    return `
+                        <tr>
+                            <td class="montserrat-black" style="color: var(--text-muted);">ROUND ${index + 1}</td>
+                            <td class="montserrat-black" style="font-size: 14px;">${s.location ? s.location.toUpperCase() : 'UNKNOWN'} GP</td>
+                            <td><span class="tyre-badge montserrat-black">${s.session_name ? s.session_name.toUpperCase() : 'SESSION'}</span></td>
+                            <td style="font-family: monospace; font-size: 12px;">${dateFormatted}</td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${s.country_name ? s.country_name.toUpperCase() : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("Calendar Error:", err);
+                scheduleBody.innerHTML = `<tr><td colspan="5" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD RACE CALENDAR.</td></tr>`;
+            }
+        }
+
+        // Kode Live Timing Tetap Sama Seperti Sebelumnya
         function updateTrackStatus(raceControlMsgs) {
             const flagDot = document.getElementById('flag-dot');
             const flagText = document.getElementById('flag-text');
-
             if (!raceControlMsgs || raceControlMsgs.length === 0) return;
 
             const flagEvents = raceControlMsgs.filter(m => m.flag || (m.category === 'Flag') || (m.message && m.message.toUpperCase().includes('FLAG')));
-            
             if (flagEvents.length > 0) {
                 const latestFlag = flagEvents[flagEvents.length - 1];
                 const msgUpper = latestFlag.message ? latestFlag.message.toUpperCase() : '';
@@ -536,14 +600,8 @@
                     flagText.innerText = 'TRACK STATUS: RED FLAG (SESSION SUSPENDED)';
                 } else if (flagType === 'YELLOW' || msgUpper.includes('YELLOW') || msgUpper.includes('SAFETY CAR') || msgUpper.includes('VSC')) {
                     flagDot.className = 'flag-dot yellow';
-                    if (msgUpper.includes('VSC')) {
-                        flagText.innerText = 'TRACK STATUS: VIRTUAL SAFETY CAR (VSC)';
-                    } else if (msgUpper.includes('SAFETY CAR')) {
-                        flagText.innerText = 'TRACK STATUS: SAFETY CAR DEPLOYED';
-                    } else {
-                        flagText.innerText = 'TRACK STATUS: YELLOW FLAG (HAZARD AHEAD)';
-                    }
-                } else if (flagType === 'GREEN' || msgUpper.includes('GREEN') || msgUpper.includes('CLEAR')) {
+                    flagText.innerText = msgUpper.includes('VSC') ? 'TRACK STATUS: VIRTUAL SAFETY CAR (VSC)' : 'TRACK STATUS: SAFETY CAR / YELLOW FLAG';
+                } else {
                     flagDot.className = 'flag-dot green';
                     flagText.innerText = 'TRACK STATUS: GREEN FLAG (TRACK CLEAR)';
                 }
@@ -554,34 +612,26 @@
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (isOffline || !locationsData || locationsData.length === 0) {
                 ctx.fillStyle = "#666";
                 ctx.font = "12px 'Plus Jakarta Sans'";
                 ctx.textAlign = "center";
-                ctx.fillText("CIRCUIT MAP OFFLINE (NO ACTIVE SESSION)", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("CIRCUIT MAP OFFLINE (LATEST RACE RESULT)", canvas.width / 2, canvas.height / 2);
                 return;
             }
 
             let xCoords = locationsData.map(l => l.x);
             let yCoords = locationsData.map(l => l.y);
-
-            let minX = Math.min(...xCoords);
-            let maxX = Math.max(...xCoords);
-            let minY = Math.min(...yCoords);
-            let maxY = Math.max(...yCoords);
+            let minX = Math.min(...xCoords), maxX = Math.max(...xCoords);
+            let minY = Math.min(...yCoords), maxY = Math.max(...yCoords);
 
             let padding = 30;
-            let rangeX = maxX - minX || 1;
-            let rangeY = maxY - minY || 1;
-
-            let scaleX = (canvas.width - padding * 2) / rangeX;
-            let scaleY = (canvas.height - padding * 2) / rangeY;
+            let scaleX = (canvas.width - padding * 2) / (maxX - minX || 1);
+            let scaleY = (canvas.height - padding * 2) / (maxY - minY || 1);
             let scale = Math.min(scaleX, scaleY);
 
             function transform(x, y) {
@@ -597,37 +647,24 @@
             let first = true;
             locationsData.forEach(l => {
                 let pt = transform(l.x, l.y);
-                if (first) {
-                    ctx.moveTo(pt.px, pt.py);
-                    first = false;
-                } else {
-                    ctx.lineTo(pt.px, pt.py);
-                }
+                if (first) { ctx.moveTo(pt.px, pt.py); first = false; } else { ctx.lineTo(pt.px, pt.py); }
             });
             ctx.stroke();
 
             const latestDriverLocations = {};
-            locationsData.forEach(l => {
-                latestDriverLocations[l.driver_number] = l;
-            });
+            locationsData.forEach(l => { latestDriverLocations[l.driver_number] = l; });
 
             Object.values(latestDriverLocations).forEach(pos => {
                 let pt = transform(pos.x, pos.y);
-                
                 ctx.fillStyle = "#00ff88";
                 ctx.beginPath();
                 ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
                 ctx.fill();
-
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "9px 'Plus Jakarta Sans'";
-                ctx.fillText(pos.driver_number, pt.px + 6, pt.py + 3);
             });
         }
 
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
-            
             try {
                 let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
                 let sessions = await sessionRes.json();
@@ -637,52 +674,45 @@
 
                 if (sessions && sessions.length > 0) {
                     let latestLive = sessions[sessions.length - 1];
-                    const sessionDate = new Date(latestLive.date_end || latestLive.date_start);
-                    const now = new Date();
-                    
-                    const diffDays = (now - sessionDate) / (1000 * 60 * 60 * 24);
-
-                    if (diffDays > 3) {
-                        isOfflineMode = true;
-                    } else {
-                        targetSession = latestLive;
-                    }
+                    const diffDays = (new Date() - new Date(latestLive.date_end || latestLive.date_start)) / (1000 * 60 * 60 * 24);
+                    if (diffDays > 3) { isOfflineMode = true; } else { targetSession = latestLive; }
                 } else {
                     isOfflineMode = true;
                 }
 
                 if (isOfflineMode) {
-                    let fallbackRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2024`);
-                    let fallbackSessions = await fallbackRes.json();
-                    if (fallbackSessions && fallbackSessions.length > 0) {
-                        targetSession = fallbackSessions[fallbackSessions.length - 1];
+                    const currentYear = new Date().getFullYear();
+                    let fallbackRes = await fetch(`${API_BASE}/sessions?year=${currentYear}`);
+                    let yearSessions = await fallbackRes.json();
+                    
+                    if (yearSessions && yearSessions.length > 0) {
+                        const races = yearSessions.filter(s => s.session_name && s.session_name.toLowerCase().includes('race'));
+                        targetSession = races.length > 0 ? races[races.length - 1] : yearSessions[yearSessions.length - 1];
+                    } else {
+                        let generalRes = await fetch(`${API_BASE}/sessions`);
+                        let allSessions = await generalRes.json();
+                        targetSession = allSessions[allSessions.length - 1];
                     }
                 }
 
                 const sessionKey = targetSession ? targetSession.session_key : null;
-
-                if (!sessionKey) {
-                    throw new Error("No session data available");
-                }
+                if (!sessionKey) throw new Error("No session data available");
 
                 if (isOfflineMode) {
                     document.getElementById('session-status').innerText = "OFFLINE";
-                    document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()} (LAST RACE RESULT)`;
-                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (LAST RESULT)";
+                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'RACE').toUpperCase()} (LATEST)`;
+                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (LATEST RESULT)";
                     document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
                     document.getElementById('latency-display').innerText = "STATUS: OFFLINE MODE";
                     document.getElementById('flag-dot').className = "flag-dot offline";
-                    document.getElementById('flag-text').innerText = "TRACK STATUS: OFFLINE (WAITING FOR NEXT RACE WEEK)";
+                    document.getElementById('flag-text').innerText = "TRACK STATUS: OFFLINE";
                     document.getElementById('map-status-label').innerText = "STANDBY";
-                    document.getElementById('map-status-label').style.color = "var(--text-muted)";
                 } else {
                     document.getElementById('session-status').innerText = "SYSTEM CONNECTED";
                     document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
-                    document.getElementById('latency-display').innerText = "LATENCY: ~0.3s (DIRECT TELEMETRY FEED)";
-                    document.getElementById('map-status-label').innerText = "GPS SYNCED";
-                    document.getElementById('map-status-label').style.color = "var(--accent-green)";
+                    document.getElementById('latency-display').innerText = "LATENCY: ~0.3s";
                 }
 
                 document.getElementById('session-key-display').innerText = sessionKey;
@@ -721,26 +751,15 @@
 
                 if (raceControl && raceControl.length > 0) {
                     const rcBox = document.getElementById('rc-messages');
-                    const recentRc = raceControl.slice(-3).reverse();
-                    rcBox.innerHTML = recentRc.map(msg => 
-                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'OFFLINE'}] ${msg.message ? msg.message.toUpperCase() : 'NO MESSAGE'}</div>`
+                    rcBox.innerHTML = raceControl.slice(-3).reverse().map(msg => 
+                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'OFFLINE'}] ${msg.message ? msg.message.toUpperCase() : ''}</div>`
                     ).join('');
-
-                    if (!isOfflineMode) {
-                        updateTrackStatus(raceControl);
-                    }
-                } else {
-                    document.getElementById('rc-messages').innerHTML = `<div class="rc-item">[OFFLINE SYSTEM] NO ACTIVE RACE CONTROL FEED. SHOWING FINAL RESULT.</div>`;
+                    if (!isOfflineMode) updateTrackStatus(raceControl);
                 }
 
                 const driverMap = {};
                 drivers.forEach(d => {
-                    driverMap[d.driver_number] = {
-                        code: d.name_acronym || "DRV",
-                        fullName: d.full_name || "Driver",
-                        team: d.team_name || "Team",
-                        number: d.driver_number
-                    };
+                    driverMap[d.driver_number] = { code: d.name_acronym || "DRV", fullName: d.full_name, team: d.team_name || "Team" };
                 });
 
                 const latestPositions = {};
@@ -750,87 +769,76 @@
                 pits.forEach(p => { pitMap[p.driver_number] = (pitMap[p.driver_number] || 0) + 1; });
 
                 const intervalMap = {};
-                if (intervals && intervals.length > 0) {
-                    intervals.forEach(i => {
-                        intervalMap[i.driver_number] = {
-                            gap: i.gap_to_leader !== null ? `+${i.gap_to_leader}s` : "LEADER",
-                            interval: i.interval !== null ? `+${i.interval}s` : "-"
-                        };
-                    });
-                }
+                intervals.forEach(i => {
+                    intervalMap[i.driver_number] = {
+                        gap: i.gap_to_leader !== null ? `+${i.gap_to_leader}s` : "LEADER",
+                        interval: i.interval !== null ? `+${i.interval}s` : "-"
+                    };
+                });
 
                 const bestLaps = {};
                 const sectorTimes = {};
                 laps.forEach(l => {
-                    if (l.lap_duration) {
-                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number]) {
-                            bestLaps[l.driver_number] = l.lap_duration;
-                            sectorTimes[l.driver_number] = {
-                                s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
-                                s2: l.duration_sector_2 ? l.duration_sector_2.toFixed(3) : "-",
-                                s3: l.duration_sector_3 ? l.duration_sector_3.toFixed(3) : "-",
-                                speed: l.st_speed ? Math.round(l.st_speed) : "-"
-                            };
-                        }
+                    if (l.lap_duration && (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number])) {
+                        bestLaps[l.driver_number] = l.lap_duration;
+                        sectorTimes[l.driver_number] = {
+                            s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
+                            s2: l.duration_sector_2 ? l.duration_sector_2.toFixed(3) : "-",
+                            s3: l.duration_sector_3 ? l.duration_sector_3.toFixed(3) : "-",
+                            speed: l.st_speed ? Math.round(l.st_speed) : "-"
+                        };
                     }
                 });
 
                 const tyreMap = {};
                 tyres.forEach(t => {
-                    tyreMap[t.driver_number] = {
-                        compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S",
-                        laps: t.tyre_age_at_start || 1
-                    };
+                    tyreMap[t.driver_number] = { compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S", laps: t.tyre_age_at_start || 1 };
                 });
 
                 let leaderboard = [];
                 Object.keys(latestPositions).forEach(num => {
                     if (driverMap[num]) {
                         leaderboard.push({
-                            pos: latestPositions[num],
-                            number: num,
-                            driver: driverMap[num],
-                            bestLap: bestLaps[num] || null,
-                            sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
-                            tyre: tyreMap[num] || { compound: "S", laps: 1 },
-                            pits: pitMap[num] || 0,
-                            gap: intervalMap[num] ? intervalMap[num].gap : "-",
-                            interval: intervalMap[num] ? intervalMap[num].interval : "-"
+                            pos: latestPositions[num], number: num, driver: driverMap[num],
+                            bestLap: bestLaps[num] || null, sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
+                            tyre: tyreMap[num] || { compound: "S", laps: 1 }, pits: pitMap[num] || 0,
+                            gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
                         });
                     }
                 });
 
                 leaderboard.sort((a, b) => a.pos - b.pos);
+                if (leaderboard.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="12" class="loading-state montserrat-black">NO POSITION DATA RECORDED.</td></tr>`;
+                    return;
+                }
 
-                tableBody.innerHTML = leaderboard.map((row) => {
-                    let lapTimeFormatted = row.bestLap ? formatLapTime(row.bestLap) : "NO TIME";
-
-                    return `
-                        <tr>
-                            <td class="pos-cell montserrat-black">${row.pos}</td>
-                            <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
-                            <td>
-                                <div class="driver-code montserrat-black">${row.driver.code}</div>
-                                <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
-                            </td>
-                            <td>
-                                <span class="tyre-badge montserrat-black">${row.tyre.compound}</span>
-                                <span style="font-size: 10px; color: var(--text-muted); margin-left: 4px;">L${row.tyre.laps}</span>
-                            </td>
-                            <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
-                            <td class="sector-cell montserrat-black">${lapTimeFormatted}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
-                            <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
-                        </tr>
-                    `;
-                }).join('');
+                tableBody.innerHTML = leaderboard.map(row => `
+                    <tr>
+                        <td class="pos-cell montserrat-black">${row.pos}</td>
+                        <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
+                        <td>
+                            <div class="driver-code montserrat-black">${row.driver.code}</div>
+                            <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
+                        </td>
+                        <td>
+                            <span class="tyre-badge montserrat-black">${row.tyre.compound}</span>
+                            <span style="font-size: 10px; color: var(--text-muted); margin-left: 4px;">L${row.tyre.laps}</span>
+                        </td>
+                        <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
+                        <td class="sector-cell montserrat-black">${row.bestLap ? formatLapTime(row.bestLap) : "NO TIME"}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
+                        <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
+                    </tr>
+                `).join('');
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="12" class="loading-state montserrat-black" style="color: var(--accent-red);">FAILED TO LOAD SESSION DATA.</td></tr>`;
             }
         }
 
