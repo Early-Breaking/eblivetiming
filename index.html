@@ -926,6 +926,8 @@
         }
 
         // Format Waktu Berdasarkan Zona Waktu Pilihan
+                // Master Kalender Resmi F1 2026 Sesuai Zona Waktu Lokal (WIB)
+        // Pastikan konversi zona waktu berjalan presisi mengikuti pilihan dropdown header
         function formatZonedTime(utcString, tz) {
             if (!utcString) return 'TBA';
             const date = new Date(utcString);
@@ -941,12 +943,12 @@
             }).format(date);
         }
 
-        // Update Banner Balapan Berikutnya & Hitung Mundur Otomatis
+        // Update Banner Balapan Berikutnya & Hitung Mundur Otomatis Berbasis WIB/Selected TZ
         function updateNextRaceBanner() {
             const now = new Date();
             let nextRace = null;
 
-            // Cari balapan (Race session) masa depan pertama
+            // Cari balapan (Race session) masa depan pertama berdasarkan waktu lokal sistem
             for (let r of officialCalendar2026) {
                 if (r.canceled) continue;
                 const raceSession = r.sessions.find(s => s.session_name === "Race");
@@ -963,7 +965,7 @@
                 document.getElementById('next-race-name').innerText = `ROUND ${nextRace.round}: ${nextRace.location}`;
                 document.getElementById('next-race-date').innerText = `Jadwal Utama: ${formatZonedTime(nextRace.date, currentTimezone)}`;
 
-                // Hitung Mundur (Countdown)
+                // Hitung Mundur (Countdown) akurat tanpa pergeseran zona waktu
                 const targetTime = new Date(nextRace.date).getTime();
                 const diff = targetTime - now.getTime();
 
