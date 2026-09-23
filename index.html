@@ -797,7 +797,7 @@
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body" class="divide-y divide-[#262626]">
-                                <!-- Data tebakan masuk lewat Javascript otomatis -->
+                                <!-- Data tebakan masuk lewat Javascript SheetDB otomatis -->
                             </tbody>
                         </table>
                     </div>
@@ -1387,37 +1387,44 @@
         fetchLiveTiming();
         setInterval(fetchLiveTiming, 4000);
 
-        // Skrip Sistem Podium Prediction Challenge
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('prediction-form');
+        // Skrip Sistem Podium Prediction Challenge + SheetDB Integration
+        const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/ugychkoonq48j';
+
+        async function loadLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
+            try {
+                const response = await fetch(SHEETDB_API_URL);
+                const data = await response.json();
 
-            if (!form || !tbody) return;
-
-            // Data dibikin bersih kosong total tanpa peserta buatan awal
-            let predictions = JSON.parse(localStorage.getItem('eb_predictions')) || [];
-
-            function renderLeaderboard() {
                 tbody.innerHTML = '';
-                if (predictions.length === 0) {
+                if (!data || data.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-500 italic">Belum ada tebakan prediksi dari komunitas. Jadilah yang pertama!</td></tr>`;
                     return;
                 }
-                predictions.forEach(item => {
+
+                data.reverse().forEach(item => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="py-3 px-4 font-semibold text-white montserrat-black">${item.name}</td>
-                        <td class="py-3 px-4 text-[#ffd700] montserrat-black">${item.p1}</td>
-                        <td class="py-3 px-4 text-[#c0c0c0] montserrat-black">${item.p2}</td>
-                        <td class="py-3 px-4 text-[#cd7f32] montserrat-black">${item.p3}</td>
+                        <td class="py-3 px-4 font-semibold text-white montserrat-black">${item.Nama || '-'}</td>
+                        <td class="py-3 px-4 text-[#ffd700] montserrat-black">${item.P1 || '-'}</td>
+                        <td class="py-3 px-4 text-[#c0c0c0] montserrat-black">${item.P2 || '-'}</td>
+                        <td class="py-3 px-4 text-[#cd7f32] montserrat-black">${item.P3 || '-'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
+            } catch (err) {
+                console.error("Gagal memuat leaderboard:", err);
+                tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500 italic">Gagal memuat data dari server.</td></tr>`;
             }
+        }
 
-            renderLeaderboard();
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLeaderboard();
 
-            form.addEventListener('submit', (e) => {
+            const form = document.getElementById('prediction-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('pred-name').value;
                 const p1 = document.getElementById('pred-p1').value;
@@ -1429,12 +1436,44 @@
                     return;
                 }
 
-                predictions.unshift({ name, p1, p2, p3 });
-                localStorage.setItem('eb_predictions', JSON.stringify(predictions));
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.innerText = "MENGIRIM...";
+                submitBtn.disabled = true;
 
-                renderLeaderboard();
-                form.reset();
-                alert("Mantap! Prediksi podium kamu berhasil dicatat. 🏁");
+                try {
+                    const response = await fetch(SHEETDB_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            data: [
+                                {
+                                    "Nama": name,
+                                    "P1": p1,
+                                    "P2": p2,
+                                    "P3": p3,
+                                    "Timestamp": new Date().toLocaleString()
+                                }
+                            ]
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert("Mantap! Prediksi podium kamu berhasil dicatat dan masuk ke leaderboard publik. 🏁");
+                        form.reset();
+                        loadLeaderboard();
+                    } else {
+                        alert("Gagal mengirim prediksi, coba lagi ya.");
+                    }
+                } catch (err) {
+                    console.error("Error posting data:", err);
+                    alert("Terjadi kesalahan koneksi.");
+                } finally {
+                    submitBtn.innerText = "Kirim Prediksi Saya";
+                    submitBtn.disabled = false;
+                }
             });
         });
     </script>
