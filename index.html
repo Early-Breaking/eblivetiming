@@ -299,6 +299,7 @@
             background-color: var(--surface-black);
             border: 1px solid var(--border-gray);
             overflow-x: auto;
+            margin-bottom: 30px;
         }
 
         table {
@@ -363,6 +364,21 @@
             text-align: center;
             padding: 40px;
             color: var(--text-muted);
+        }
+
+        /* FOOTER DISCLAIMER */
+        footer {
+            border-top: 1px solid var(--border-gray);
+            padding-top: 25px;
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        footer p {
+            margin-bottom: 10px;
         }
 
         @media (max-width: 1024px) {
@@ -490,6 +506,13 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- FOOTER DISCLAIMER -->
+        <footer>
+            <p>&copy; 2025-2026 Early Braking Motorsport. All rights reserved.</p>
+            <p>Total or partial reproduction of any content included on this website is prohibited without prior, express, and written consent.</p>
+            <p>This website is an independent, unofficial project and is not affiliated in any way with the Formula 1 group of companies, the FIA, or any related entity. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX, and other related trademarks are registered trademarks of Formula One Licensing B.V.</p>
+        </footer>
     </div>
 
     <script>
@@ -606,7 +629,6 @@
             const tableBody = document.getElementById('timing-body');
             
             try {
-                // Ambil daftar sesi terbaru
                 let sessionRes = await fetch(`${API_BASE}/sessions?session_key=latest`);
                 let sessions = await sessionRes.json();
                 
@@ -618,7 +640,6 @@
                     const sessionDate = new Date(latestLive.date_end || latestLive.date_start);
                     const now = new Date();
                     
-                    // Cek apakah jeda dari sesi terakhir lebih dari 3 hari (artinya sedang libur antar race week)
                     const diffDays = (now - sessionDate) / (1000 * 60 * 60 * 24);
 
                     if (diffDays > 3) {
@@ -630,12 +651,11 @@
                     isOfflineMode = true;
                 }
 
-                // Kalau sedang tidak ada race week (off-week/libur), tarik sesi "Race" terakhir yang datanya komplit (misal dari tahun terbaru)
                 if (isOfflineMode) {
                     let fallbackRes = await fetch(`${API_BASE}/sessions?session_name=Race&year=2024`);
                     let fallbackSessions = await fallbackRes.json();
                     if (fallbackSessions && fallbackSessions.length > 0) {
-                        targetSession = fallbackSessions[fallbackSessions.length - 1]; // Mengambil GP race terakhir sebelum libur
+                        targetSession = fallbackSessions[fallbackSessions.length - 1];
                     }
                 }
 
@@ -645,7 +665,6 @@
                     throw new Error("No session data available");
                 }
 
-                // Update Tampilan Header Berdasarkan Status Sesi
                 if (isOfflineMode) {
                     document.getElementById('session-status').innerText = "OFFLINE";
                     document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()} (LAST RACE RESULT)`;
@@ -668,7 +687,6 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Tarik Data Sependukung Sesi Tersebut
                 const [driversRes, positionsRes, lapsRes, tyresRes, raceControlRes, pitRes, weatherRes, intervalsRes, locationRes] = await Promise.all([
                     fetch(`${API_BASE}/drivers?session_key=${sessionKey}`),
                     fetch(`${API_BASE}/position?session_key=${sessionKey}`),
@@ -691,7 +709,6 @@
                 const intervals = intervalsRes ? await intervalsRes.json() : [];
                 const locations = locationRes ? await locationRes.json() : [];
 
-                // Render Peta Track
                 renderTrackMap(locations, isOfflineMode);
 
                 if (weather && weather.length > 0) {
@@ -746,7 +763,7 @@
                 const sectorTimes = {};
                 laps.forEach(l => {
                     if (l.lap_duration) {
-                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLops[l.driver_number]) {
+                        if (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number]) {
                             bestLaps[l.driver_number] = l.lap_duration;
                             sectorTimes[l.driver_number] = {
                                 s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
