@@ -359,12 +359,19 @@
 
         .rc-item { color: var(--text-white); font-family: monospace; }
 
-        /* TABLES WRAPPER */
+        /* TABLES WRAPPER - Responsive: Desktop Full Width, Mobile Scrollable */
         .table-wrapper {
             background-color: var(--surface-black);
             border: 1px solid var(--border-gray);
-            overflow-x: auto;
             margin-bottom: 30px;
+            width: 100%;
+            overflow-x: hidden; /* Default desktop: no horizontal scroll */
+        }
+
+        @media (max-width: 1024px) {
+            .table-wrapper {
+                overflow-x: auto; /* Mobile: allow horizontal scroll */
+            }
         }
 
         table {
@@ -397,7 +404,23 @@
         .driver-code { font-size: 15px; letter-spacing: 1px; }
         .team-name { font-size: 11px; color: var(--text-muted); font-weight: 400; }
         .sector-cell { font-family: monospace; font-size: 12px; }
-        .tyre-badge { border: 1px solid var(--text-white); color: var(--text-white); padding: 2px 6px; font-size: 10px; display: inline-block; border-radius: 2px; }
+
+        /* TYRE BADGE DENGAN WARNA RESMI F1 */
+        .tyre-badge {
+            padding: 3px 8px;
+            font-size: 10px;
+            display: inline-block;
+            border-radius: 2px;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+        .tyre-soft { background-color: #ff3333; color: #ffffff; border-color: #ff3333; }
+        .tyre-medium { background-color: #ffd700; color: #000000; border-color: #ffd700; }
+        .tyre-hard { background-color: #ffffff; color: #000000; border-color: #ffffff; }
+        .tyre-intermediate { background-color: #00ff88; color: #000000; border-color: #00ff88; }
+        .tyre-wet { background-color: #00d2ff; color: #000000; border-color: #00d2ff; }
+        .tyre-default { border: 1px solid var(--text-white); color: var(--text-white); }
+
         .loading-state { text-align: center; padding: 40px; color: var(--text-muted); }
 
         /* ACCORDION CALENDAR STYLES */
@@ -778,7 +801,7 @@
                     </div>
 
                     <button type="submit" class="w-full bg-[#00ff88] hover:bg-[#00cc6a] text-black font-bold py-3 rounded-lg text-sm transition tracking-wider uppercase montserrat-black shadow-lg shadow-[#00ff88]/20 cursor-pointer">
-                        Kirim Prediksi Saya 🚀
+                        Kirim Prediksi Saya
                     </button>
                 </form>
 
@@ -1114,7 +1137,7 @@
                 let sessionsHtml = r.canceled ? `<tr><td colspan="2" style="color: var(--accent-red); font-family: monospace;">EVENT CANCELED</td></tr>` : 
                     r.sessions.map(s => `
                         <tr>
-                            <td class="montserrat-black" style="width: 35%; color: var(--text-white);"><span class="tyre-badge">${s.session_name.toUpperCase()}</span></td>
+                            <td class="montserrat-black" style="width: 35%; color: var(--text-white);"><span class="tyre-badge tyre-default">${s.session_name.toUpperCase()}</span></td>
                             <td style="font-family: monospace; color: var(--text-muted);">${formatZonedTime(s.date_start, currentTimezone)}</td>
                         </tr>
                     `).join('');
@@ -1219,6 +1242,18 @@
                 ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
                 ctx.fill();
             });
+        }
+
+        // Helper untuk menentukan kelas warna ban (Soft, Medium, Hard, Intermediate, Wet)
+        function getTyreClass(compoundName) {
+            if (!compoundName) return 'tyre-default';
+            const comp = compoundName.toLowerCase();
+            if (comp.includes('soft') || comp === 's') return 'tyre-soft';
+            if (comp.includes('medium') || comp === 'm') return 'tyre-medium';
+            if (comp.includes('hard') || comp === 'h') return 'tyre-hard';
+            if (comp.includes('inter') || comp === 'i') return 'tyre-intermediate';
+            if (comp.includes('wet') || comp === 'w') return 'tyre-wet';
+            return 'tyre-default';
         }
 
         async function fetchLiveTiming() {
@@ -1351,7 +1386,7 @@
 
                 const tyreMap = {};
                 tyres.forEach(t => {
-                    tyreMap[t.driver_number] = { compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S", laps: t.tyre_age_at_start || 1 };
+                    tyreMap[t.driver_number] = { compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S", fullName: t.compound || "Soft", laps: t.tyre_age_at_start || 1 };
                 });
 
                 let leaderboard = [];
@@ -1360,7 +1395,7 @@
                         leaderboard.push({
                             pos: latestPositions[num], number: num, driver: driverMap[num],
                             bestLap: bestLarpCheck(bestLaps[num]), sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
-                            tyre: tyreMap[num] || { compound: "S", laps: 1 }, pits: pitMap[num] || 0,
+                            tyre: tyreMap[num] || { compound: "S", fullName: "Soft", laps: 1 }, pits: pitMap[num] || 0,
                             gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
                         });
                     }
@@ -1372,28 +1407,31 @@
                     return;
                 }
 
-                tableBody.innerHTML = leaderboard.map(row => `
-                    <tr>
-                        <td class="pos-cell montserrat-black">${row.pos}</td>
-                        <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
-                        <td>
-                            <div class="driver-code montserrat-black">${row.driver.code}</div>
-                            <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
-                        </td>
-                        <td>
-                            <span class="tyre-badge montserrat-black">${row.tyre.compound}</span>
-                            <span style="font-size: 10px; color: var(--text-muted); margin-left: 4px;">L${row.tyre.laps}</span>
-                        </td>
-                        <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
-                        <td class="sector-cell montserrat-black">${row.bestLap ? formatLapTime(row.bestLap) : "NO TIME"}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
-                        <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
-                    </tr>
-                `).join('');
+                tableBody.innerHTML = leaderboard.map(row => {
+                    const tyreCls = getTyreClass(row.tyre.fullName);
+                    return `
+                        <tr>
+                            <td class="pos-cell montserrat-black">${row.pos}</td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
+                            <td>
+                                <div class="driver-code montserrat-black">${row.driver.code}</div>
+                                <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
+                            </td>
+                            <td>
+                                <span class="tyre-badge ${tyreCls} montserrat-black">${row.tyre.compound}</span>
+                                <span style="font-size: 10px; color: var(--text-muted); margin-left: 4px;">L${row.tyre.laps}</span>
+                            </td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
+                            <td class="sector-cell montserrat-black">${row.bestLap ? formatLapTime(row.bestLap) : "NO TIME"}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
+                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
+                            <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
+                        </tr>
+                    `;
+                }).join('');
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
