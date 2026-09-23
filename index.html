@@ -359,18 +359,18 @@
 
         .rc-item { color: var(--text-white); font-family: monospace; }
 
-        /* TABLES WRAPPER - Responsive: Desktop Full Width, Mobile Scrollable */
+        /* TABLES WRAPPER */
         .table-wrapper {
             background-color: var(--surface-black);
             border: 1px solid var(--border-gray);
             margin-bottom: 30px;
             width: 100%;
-            overflow-x: hidden; /* Default desktop: no horizontal scroll */
+            overflow-x: hidden;
         }
 
         @media (max-width: 1024px) {
             .table-wrapper {
-                overflow-x: auto; /* Mobile: allow horizontal scroll */
+                overflow-x: auto;
             }
         }
 
@@ -405,7 +405,7 @@
         .team-name { font-size: 11px; color: var(--text-muted); font-weight: 400; }
         .sector-cell { font-family: monospace; font-size: 12px; }
 
-        /* TYRE BADGE DENGAN WARNA RESMI F1 */
+        /* TYRE BADGE */
         .tyre-badge {
             padding: 3px 8px;
             font-size: 10px;
@@ -699,7 +699,7 @@
                 </table>
             </div>
 
-            <!-- FITUR PREDIKSI PODIUM F1 -->
+            <!-- FITUR PREDIKSI PODIUM F1 (DI-HIDE KARENA SESI SUDAH HABIS) -->
             <section class="max-w-4xl mx-auto my-8 p-6 bg-[#141414] border border-[#262626] rounded-2xl shadow-xl text-white" style="display: none;">
                 <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div>
@@ -713,14 +713,14 @@
                 <form id="prediction-form" class="space-y-4 bg-[#1c1c1c] p-4 rounded-xl border border-[#262626]">
                     <div>
                         <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1 montserrat-black">Nama / Username WhatsApp</label>
-                        <input type="text" id="pred-name" required placeholder="Contoh: Rian_F1ID" 
+                        <input type="text" id="pred-name" placeholder="Contoh: Rian_F1ID" 
                             class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00ff88]">
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-[#ffd700] mb-1 font-semibold montserrat-black">🥇 P1 (Winner)</label>
-                            <select id="pred-p1" required class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#ffd700]">
+                            <select id="pred-p1" class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#ffd700]">
                                 <option value="">Pilih Driver P1</option>
                                 <option value="Max Verstappen">Max Verstappen (Red Bull)</option>
                                 <option value="Liam Lawson">Liam Lawson (Red Bull)</option>
@@ -747,7 +747,7 @@
 
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-[#c0c0c0] mb-1 font-semibold montserrat-black">🥈 P2 (Second)</label>
-                            <select id="pred-p2" required class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#c0c0c0]">
+                            <select id="pred-p2" class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#c0c0c0]">
                                 <option value="">Pilih Driver P2</option>
                                 <option value="Max Verstappen">Max Verstappen (Red Bull)</option>
                                 <option value="Liam Lawson">Liam Lawson (Red Bull)</option>
@@ -774,7 +774,7 @@
 
                         <div>
                             <label class="block text-xs uppercase tracking-wider text-[#cd7f32] mb-1 font-semibold montserrat-black">🥉 P3 (Third)</label>
-                            <select id="pred-p3" required class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#cd7f32]">
+                            <select id="pred-p3" class="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#cd7f32]">
                                 <option value="">Pilih Driver P3</option>
                                 <option value="Max Verstappen">Max Verstappen (Red Bull)</option>
                                 <option value="Liam Lawson">Liam Lawson (Red Bull)</option>
@@ -1244,7 +1244,6 @@
             });
         }
 
-        // Helper untuk menentukan kelas warna ban (Soft, Medium, Hard, Intermediate, Wet)
         function getTyreClass(compoundName) {
             if (!compoundName) return 'tyre-default';
             const comp = compoundName.toLowerCase();
@@ -1453,94 +1452,9 @@
         fetchLiveTiming();
         setInterval(fetchLiveTiming, 4000);
 
-        // Skrip Sistem Podium Prediction Challenge + SheetDB Integration
-        const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/ugychkoonq48j';
-
-        async function loadLeaderboard() {
-            const tbody = document.getElementById('leaderboard-body');
-            try {
-                const response = await fetch(SHEETDB_API_URL);
-                const data = await response.json();
-
-                tbody.innerHTML = '';
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-500 italic">Belum ada tebakan prediksi dari komunitas. Jadilah yang pertama!</td></tr>`;
-                    return;
-                }
-
-                data.reverse().forEach(item => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="py-3 px-4 font-semibold text-white montserrat-black">${item.Nama || '-'}</td>
-                        <td class="py-3 px-4 text-[#ffd700] montserrat-black">${item.P1 || '-'}</td>
-                        <td class="py-3 px-4 text-[#c0c0c0] montserrat-black">${item.P2 || '-'}</td>
-                        <td class="py-3 px-4 text-[#cd7f32] montserrat-black">${item.P3 || '-'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                console.error("Gagal memuat leaderboard:", err);
-                tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500 italic">Gagal memuat data dari server.</td></tr>`;
-            }
-        }
-
+        // Skrip untuk form prediksi di-skip/di-hide karena sesi habis
         document.addEventListener('DOMContentLoaded', () => {
-            loadLeaderboard();
-
-            const form = document.getElementById('prediction-form');
-            if (!form) return;
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('pred-name').value;
-                const p1 = document.getElementById('pred-p1').value;
-                const p2 = document.getElementById('pred-p2').value;
-                const p3 = document.getElementById('pred-p3').value;
-
-                if (p1 === p2 || p1 === p3 || p2 === p3) {
-                    alert("Driver untuk P1, P2, dan P3 tidak boleh sama, bro!");
-                    return;
-                }
-
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.innerText = "MENGIRIM...";
-                submitBtn.disabled = true;
-
-                try {
-                    const response = await fetch(SHEETDB_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            data: [
-                                {
-                                    "Nama": name,
-                                    "P1": p1,
-                                    "P2": p2,
-                                    "P3": p3,
-                                    "Timestamp": new Date().toLocaleString()
-                                }
-                            ]
-                        })
-                    });
-
-                    if (response.ok) {
-                        alert("Mantap! Prediksi podium kamu berhasil dicatat dan masuk ke leaderboard publik. 🏁");
-                        form.reset();
-                        loadLeaderboard();
-                    } else {
-                        alert("Gagal mengirim prediksi, coba lagi ya.");
-                    }
-                } catch (err) {
-                    console.error("Error posting data:", err);
-                    alert("Terjadi kesalahan koneksi.");
-                } finally {
-                    submitBtn.innerText = "Kirim Prediksi Saya";
-                    submitBtn.disabled = false;
-                }
-            });
+            // Kalau mau dimunculkan lagi nanti, tinggal hapus style display: none di HTML dan aktifkan fungsi loadLeaderboard di sini.
         });
     </script>
 </body>
