@@ -619,6 +619,18 @@
         <!-- VIEW 1: LIVE TIMING & DASHBOARD -->
         <div id="view-timing" class="view-section active-view">
             
+            <!-- NOTIFIKASI STATUS & ERROR (ERROR 429 & HISTORICAL BACK) -->
+            <div id="system-notification-banner" style="background-color: #1f1f1f; border-left: 4px solid var(--accent-yellow); padding: 12px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow); font-size: 16px;"></i>
+                    <div>
+                        <span class="montserrat-black" id="notif-title" style="color: var(--text-white);">SISTEM NORMAL</span>
+                        <div id="notif-desc" style="color: var(--text-muted); margin-top: 2px;">Menghubungkan langsung ke stream telemetri OpenF1.</div>
+                    </div>
+                </div>
+                <div id="notif-badge" style="background: rgba(255,204,0,0.1); color: var(--accent-yellow); padding: 3px 8px; font-size: 10px; border-radius: 3px;" class="montserrat-black">LIVE FEED</div>
+            </div>
+
             <!-- NEXT RACE BANNER -->
             <div class="next-race-banner" id="next-race-banner">
                 <div>
@@ -1072,14 +1084,14 @@
 
         let predictionsData = [];
 
-        // Fungsi fetch dengan penanganan error 429 dan Exponential Backoff
+        // Fungsi fetch dengan penanganan error 429 dan Exponential Backoff serta pemberitahuan UI
         async function fetchWithRetry(url, retries = 3, delay = 1500) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url);
                     if (response.status === 429) {
-                        // Terkena Rate Limit (429), tunggu lebih lama sebelum mencoba ulang
                         console.warn(`Rate limit hit (429) for ${url}. Retrying in ${delay}ms...`);
+                        updateNotificationBanner("error-429", "TERDETEKSI ERROR 429 (RATE LIMIT API)", "API OpenF1 membatasi permintaan. Sistem sedang mencoba ulang otomatis...");
                         if (i === retries - 1) throw new Error(`HTTP error! status: 429 (Rate Limit Exceeded)`);
                         await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
                         continue;
@@ -1091,6 +1103,38 @@
                     await new Promise(res => setTimeout(res, delay * (i + 1)));
                 }
             }
+        }
+
+        // Fungsi helper untuk memperbarui Banner Notifikasi Sistem di UI
+        function updateNotificationBanner(type, title, desc) {
+            const banner = document.getElementById('system-notification-banner');
+            const notifTitle = document.getElementById('notif-title');
+            const notifDesc = document.getElementById('notif-desc');
+            const notifBadge = document.getElementById('notif-badge');
+
+            if (!banner) return;
+
+            if (type === "error-429") {
+                banner.style.borderLeftColor = "var(--accent-red)";
+                notifTitle.style.color = "var(--accent-red)";
+                notifBadge.style.background = "rgba(255, 51, 51, 0.1)";
+                notifBadge.style.color = "var(--accent-red)";
+                notifBadge.innerText = "ERROR 429";
+            } else if (type === "historical-back") {
+                banner.style.borderLeftColor = "var(--accent-yellow)";
+                notifTitle.style.color = "var(--accent-yellow)";
+                notifBadge.style.background = "rgba(255, 204, 0, 0.1)";
+                notifBadge.style.color = "var(--accent-yellow)";
+                notifBadge.innerText = "HISTORICAL BACK";
+            } else {
+                banner.style.borderLeftColor = "var(--accent-green)";
+                notifTitle.style.color = "var(--accent-white)";
+                notifBadge.style.background = "rgba(0, 255, 136, 0.1)";
+                notifBadge.style.color = "var(--accent-green)";
+                notifBadge.innerText = "LIVE FEED";
+            }
+            notifTitle.innerText = title;
+            notifDesc.innerText = desc;
         }
 
         function switchView(viewName) {
@@ -1255,7 +1299,7 @@
                 ctx.fillStyle = "#666";
                 ctx.font = "12px 'Plus Jakarta Sans'";
                 ctx.textAlign = "center";
-                ctx.fillText("CIRCUIT MAP OFFLINE (LATEST RACE RESULT)", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("CIRCUIT MAP OFFLINE (HISTORICAL BACK RESULT)", canvas.width / 2, canvas.height / 2);
                 return;
             }
 
@@ -1342,17 +1386,19 @@
             </div>`;
         }
 
-        // Pengganti fallback saat API utama gagal / terkena limit
+        // Penanganan error state dengan notifikasi Historical Back dan error 429
         function handleApiErrorState(tableBody) {
-            document.getElementById('session-status').innerText = "ARCHIVE / OFFLINE MODE";
-            document.getElementById('session-title').innerText = "TELEMETRY UNAVAILABLE (RATE LIMITED / OFFLINE)";
-            document.getElementById('live-indicator-text').innerText = "● OFFLINE";
-            document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
-            document.getElementById('latency-display').innerText = "STATUS: OPENF1 RATE LIMITED (HTTP 429)";
+            document.getElementById('session-status').innerText = "HISTORICAL BACK / OFFLINE MODE";
+            document.getElementById('session-title').innerText = "TELEMETRY UNAVAILABLE (RATE LIMITED / HISTORICAL BACK)";
+            document.getElementById('live-indicator-text').innerText = "● HISTORICAL BACK";
+            document.getElementById('live-indicator-text').style.color = "var(--accent-yellow)";
+            document.getElementById('latency-display').innerText = "STATUS: HISTORICAL BACK & ERROR 429 ACTIVE";
             document.getElementById('flag-dot').className = "flag-dot offline";
-            document.getElementById('flag-text').innerText = "TRACK STATUS: API OFFLINE";
+            document.getElementById('flag-text').innerText = "TRACK STATUS: HISTORICAL BACK (API OFFLINE)";
             
-            tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-yellow);"><i class="fa-solid fa-triangle-exclamation"></i> TERDETEKSI ERROR 429 / RATE LIMIT. SILAKAN COBA REFRESH BEBERAPA SAAT LAGI.</td></tr>`;
+            updateNotificationBanner("historical-back", "NOTIFIKASI: HISTORICAL BACK & ERROR 429 AKTIF", "Sistem mendeteksi limit API atau kembali ke data sesi historis sebelumnya.");
+            
+            tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-yellow);"><i class="fa-solid fa-triangle-exclamation"></i> TERDETEKSI ERROR 429 & HISTORICAL BACK ERROR. MENAMPILKAN ARSIP DATA LAMA.</td></tr>`;
             renderTrackMap([], true);
         }
 
@@ -1399,20 +1445,24 @@
                 const sessionKey = targetSession ? targetSession.session_key : 9158;
 
                 if (isOfflineMode) {
-                    document.getElementById('session-status').innerText = "ARCHIVE / LATEST RESULT";
+                    document.getElementById('session-status').innerText = "HISTORICAL BACK / LATEST RESULT";
                     document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
-                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (MENAMPILKAN HASIL TERAKHIR)";
-                    document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
-                    document.getElementById('latency-display').innerText = "STATUS: ARSIP DATA TERAKHIR";
+                    document.getElementById('live-indicator-text').innerText = "● HISTORICAL BACK (ARSIP)";
+                    document.getElementById('live-indicator-text').style.color = "var(--accent-yellow)";
+                    document.getElementById('latency-display').innerText = "STATUS: HISTORICAL BACK DATA";
                     document.getElementById('flag-dot').className = "flag-dot offline";
-                    document.getElementById('flag-text').innerText = "TRACK STATUS: SESI SELESAI / OFFLINE";
-                    document.getElementById('map-status-label').innerText = "ARSIP GPS";
+                    document.getElementById('flag-text').innerText = "TRACK STATUS: HISTORICAL BACK ACTIVE";
+                    document.getElementById('map-status-label').innerText = "HISTORICAL GPS";
+                    
+                    updateNotificationBanner("historical-back", "NOTIFIKASI: HISTORICAL BACK ERROR TERPICU", "Sistem otomatis beralih menampilkan arsip data telemetri historis.");
                 } else {
                     document.getElementById('session-status').innerText = "LIVE STREAM ACTIVE";
                     document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'GRAND PRIX'} GP - ${(targetSession.session_name || 'FP1').toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
                     document.getElementById('latency-display').innerText = "LATENCY: ~0.3s";
+                    
+                    updateNotificationBanner("live", "SISTEM LIVE TELEMETRY NORMAL", "Menerima aliran data langsung secara real-time dari OpenF1.");
                 }
 
                 document.getElementById('session-key-display').innerText = sessionKey;
