@@ -1415,17 +1415,36 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
-                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => []),
-                    fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => [])
+                // Fetch dengan fallback Caching Lokal (localStorage) agar tidak kosong saat rate limit / interval berbayar
+                let [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
+                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null),
+                    fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => null)
                 ]);
+
+                // Simpan ke cache lokal jika data valid, jika gagal/rate limit ambil dari cache localStorage
+                if (drivers && drivers.length > 0) { localStorage.setItem('cache_drivers', JSON.stringify(drivers)); } else { drivers = JSON.parse(localStorage.getItem('cache_drivers')) || []; }
+                if (positions && positions.length > 0) { localStorage.setItem('cache_positions', JSON.stringify(positions)); } else { positions = JSON.parse(localStorage.getItem('cache_positions')) || []; }
+                if (laps && laps.length > 0) { localStorage.setItem('cache_laps', JSON.stringify(laps)); } else { laps = JSON.parse(localStorage.getItem('cache_laps')) || []; }
+                if (tyres && tyres.length > 0) { localStorage.setItem('cache_tyres', JSON.stringify(tyres)); } else { tyres = JSON.parse(localStorage.getItem('cache_tyres')) || []; }
+                if (raceControl && raceControl.length > 0) { localStorage.setItem('cache_rc', JSON.stringify(raceControl)); } else { raceControl = JSON.parse(localStorage.getItem('cache_rc')) || []; }
+                if (pits && pits.length > 0) { localStorage.setItem('cache_pits', JSON.stringify(pits)); } else { pits = JSON.parse(localStorage.getItem('cache_pits')) || []; }
+                if (weather && weather.length > 0) { localStorage.setItem('cache_weather', JSON.stringify(weather)); } else { weather = JSON.parse(localStorage.getItem('cache_weather')) || []; }
+                
+                // Khusus intervals yang sering kena limit/berbayar, di-handle dengan aman menggunakan cache lokal terakhir
+                if (intervals && intervals.length > 0) { 
+                    localStorage.setItem('cache_intervals', JSON.stringify(intervals)); 
+                } else { 
+                    intervals = JSON.parse(localStorage.getItem('cache_intervals')) || []; 
+                }
+
+                if (locations && locations.length > 0) { localStorage.setItem('cache_locations', JSON.stringify(locations)); } else { locations = JSON.parse(localStorage.getItem('cache_locations')) || []; }
 
                 if (!drivers || drivers.length === 0) {
                     return handleApiErrorState(tableBody);
