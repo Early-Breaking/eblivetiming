@@ -899,7 +899,6 @@
 
     <script>
         const API_BASE = "https://api.openf1.org/v1";
-        const JOLPICA_BASE = "https://api.jolpica.net/f1";
         let currentTimezone = 'Asia/Jakarta';
         let scheduleLoaded = false;
         let cachedRounds = [];
@@ -1073,10 +1072,18 @@
 
         let predictionsData = [];
 
-        async function fetchWithRetry(url, retries = 2, delay = 1000) {
+        // Fungsi fetch dengan penanganan error 429 dan Exponential Backoff
+        async function fetchWithRetry(url, retries = 3, delay = 1500) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url);
+                    if (response.status === 429) {
+                        // Terkena Rate Limit (429), tunggu lebih lama sebelum mencoba ulang
+                        console.warn(`Rate limit hit (429) for ${url}. Retrying in ${delay}ms...`);
+                        if (i === retries - 1) throw new Error(`HTTP error! status: 429 (Rate Limit Exceeded)`);
+                        await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+                        continue;
+                    }
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return await response.json();
                 } catch (err) {
@@ -1269,7 +1276,6 @@
                 };
             }
 
-            // GAMBAR TRACT CIRCUIT BERDASARKAN SEGMEN MINI SECTORS
             const totalPoints = locationsData.length;
             const colors = ['#00ff88', '#bd00ff', '#ffcc00', '#00ff88', '#00d2ff'];
             
@@ -1278,7 +1284,6 @@
                 let pt1 = transform(locationsData[i].x, locationsData[i].y);
                 let pt2 = transform(locationsData[i+1].x, locationsData[i+1].y);
                 
-                // Color variation by mini sector segments
                 let colorIdx = Math.floor((i / totalPoints) * 20) % colors.length;
                 ctx.strokeStyle = colors[colorIdx];
 
@@ -1288,7 +1293,6 @@
                 ctx.stroke();
             }
 
-            // POSISI DRIVER DOTS
             const latestDriverLocations = {};
             locationsData.forEach(l => { latestDriverLocations[l.driver_number] = l; });
 
@@ -1300,7 +1304,7 @@
                 ctx.beginPath();
                 ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0; // reset shadow
+                ctx.shadowBlur = 0;
             });
         }
 
@@ -1315,7 +1319,6 @@
             return 'tyre-default';
         }
 
-        /* HELPER UNTUK MENGHASILKAN MINI SECTORS VISUAL BARS (PURPLE, GREEN, YELLOW) */
         function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest) {
             if (!secDuration || secDuration === "-") {
                 return `<div class="mini-sectors-bar">
@@ -1339,54 +1342,23 @@
             </div>`;
         }
 
-        // FALLBACK STANDALONE VIA JOLPICA API JIKA OPENF1 401/CORS BLOCKED
-        async function fetchJolpicaFallback(tableBody) {
-            try {
-                const data = await fetchWithRetry(`${JOLPICA_BASE}/current/last/results.json`);
-                const raceData = data.MRData.RaceTable.Races[0];
-                if (!raceData) throw new Error("No Jolpica data");
-
-                document.getElementById('session-status').innerText = "ARCHIVE / JOLPICA FEED";
-                document.getElementById('session-title').innerText = `${raceData.raceName.toUpperCase()}`;
-                document.getElementById('live-indicator-text').innerText = "● OFFLINE (RESULT ARCHIVE)";
-                document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
-                document.getElementById('latency-display').innerText = "STATUS: JOLPICA BACKUP API";
-                document.getElementById('flag-dot').className = "flag-dot offline";
-                document.getElementById('flag-text').innerText = "TRACK STATUS: SESI SELESAI";
-                document.getElementById('session-key-display').innerText = raceData.season + "-" + raceData.round;
-
-                const results = raceData.Results;
-                tableBody.innerHTML = results.map(r => `
-                    <tr>
-                        <td class="pos-cell montserrat-black">${r.position}</td>
-                        <td class="montserrat-black" style="color: var(--text-muted);">${r.number}</td>
-                        <td>
-                            <div class="driver-code montserrat-black">${r.Driver.code || r.Driver.driverId.substring(0, 3).toUpperCase()}</div>
-                            <div class="team-name montserrat-black">${r.Constructor.name.toUpperCase()}</div>
-                        </td>
-                        <td class="montserrat-black" style="color: var(--accent-green); font-size: 13px;">L${r.laps}</td>
-                        <td><span class="tyre-badge tyre-default montserrat-black">-</span></td>
-                        <td class="montserrat-black" style="color: var(--text-muted);">-</td>
-                        <td class="sector-cell montserrat-black">${r.FastestLap ? r.FastestLap.Time.time : "NO TIME"}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${r.Time ? r.Time.time : r.status}</td>
-                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">-</td>
-                        <td class="sector-cell montserrat-black"><div>-</div></td>
-                        <td class="sector-cell montserrat-black"><div>-</div></td>
-                        <td class="sector-cell montserrat-black"><div>-</div></td>
-                        <td class="sector-cell montserrat-black">${r.FastestLap && r.FastestLap.AverageSpeed ? Math.round(r.FastestLap.AverageSpeed.speed) : "-"} KM/H</td>
-                    </tr>
-                `).join('');
-                renderTrackMap([], true);
-            } catch (err) {
-                console.error("Jolpica Fallback Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> DATA UNAVAILABLE CURRENTLY</td></tr>`;
-            }
+        // Pengganti fallback saat API utama gagal / terkena limit
+        function handleApiErrorState(tableBody) {
+            document.getElementById('session-status').innerText = "ARCHIVE / OFFLINE MODE";
+            document.getElementById('session-title').innerText = "TELEMETRY UNAVAILABLE (RATE LIMITED / OFFLINE)";
+            document.getElementById('live-indicator-text').innerText = "● OFFLINE";
+            document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
+            document.getElementById('latency-display').innerText = "STATUS: OPENF1 RATE LIMITED (HTTP 429)";
+            document.getElementById('flag-dot').className = "flag-dot offline";
+            document.getElementById('flag-text').innerText = "TRACK STATUS: API OFFLINE";
+            
+            tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-yellow);"><i class="fa-solid fa-triangle-exclamation"></i> TERDETEKSI ERROR 429 / RATE LIMIT. SILAKAN COBA REFRESH BEBERAPA SAAT LAGI.</td></tr>`;
+            renderTrackMap([], true);
         }
 
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
-                // Trik: Coba panggil session key spesifik/historis untuk menghindari proteksi 401 Unauthorized OpenF1
                 let targetSession = null;
                 let isOfflineMode = false;
                 let sessions = null;
@@ -1394,7 +1366,7 @@
                 try {
                     sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
                 } catch (e) {
-                    console.warn("OpenF1 session_key=latest blocked (401/CORS). Fallback to historical session.");
+                    console.warn("OpenF1 session_key=latest blocked or rate limited.");
                 }
 
                 if (sessions && sessions.length > 0) {
@@ -1420,7 +1392,6 @@
 
                         targetSession = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : yearSessions[yearSessions.length - 1];
                     } else {
-                        // Fallback ke session key spesifik jika endpoint year bermasalah
                         targetSession = { session_key: 9158, location: "Bahrain", session_name: "Race" };
                     }
                 }
@@ -1446,7 +1417,6 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Fetch dengan Catch Safeguard agar tidak throw error global
                 const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
                     fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => []),
@@ -1459,9 +1429,8 @@
                     fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => [])
                 ]);
 
-                // Jika data drivers kosong akibat CORS/401, alihkan ke Jolpica Fallback
                 if (!drivers || drivers.length === 0) {
-                    return await fetchJolpicaFallback(tableBody);
+                    return handleApiErrorState(tableBody);
                 }
 
                 renderTrackMap(locations, isOfflineMode);
@@ -1599,7 +1568,7 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
-                await fetchJolpicaFallback(tableBody);
+                handleApiErrorState(tableBody);
             }
         }
 
@@ -1635,7 +1604,7 @@
         updateNextRaceBanner();
         setInterval(updateNextRaceBanner, 1000);
         fetchLiveTiming();
-        setInterval(fetchLiveTiming, 4000);
+        setInterval(fetchLiveTiming, 10000); // Interval diperpanjang menjadi 10 detik untuk menghindari limit 429
 
         document.addEventListener('DOMContentLoaded', () => {
             const predForm = document.getElementById('prediction-form');
