@@ -152,10 +152,10 @@
 
         /* CONTAINER ULTRRAWIDE / FULL DESKTOP */
         .container {
-            max-width: 1800px;
-            width: 96%;
-            margin: 20px auto;
-            padding: 0 10px;
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            padding: 10px 0;
         }
 
         /* NEXT RACE BANNER */
@@ -206,16 +206,19 @@
 
         /* TRACK FLAG BANNER */
         .flag-banner {
-            border: 2px solid var(--text-white);
+            border-top: 2px solid var(--text-white);
+            border-bottom: 2px solid var(--text-white);
+            border-left: none;
+            border-right: none;
             padding: 12px 20px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #000;
             flex-wrap: wrap;
             gap: 10px;
-        }
+         }
 
         .flag-status-text {
             font-size: 14px;
