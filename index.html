@@ -155,7 +155,7 @@
             max-width: 100%;
             width: 100%;
             margin: 0 auto;
-            padding: 10px 0;
+            padding: 10px 15px;
         }
 
         /* NEXT RACE BANNER */
@@ -365,34 +365,36 @@
 
         .rc-item { color: var(--text-white); font-family: monospace; }
 
-        /* TABLES WRAPPER OPTIMIZED FOR DESKTOP FULL-WIDTH */
+        /* TABLES WRAPPER OPTIMIZED FOR DESKTOP & MOBILE */
         .table-wrapper {
             background-color: var(--surface-black);
             border: 1px solid var(--border-gray);
             margin-bottom: 25px;
             width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 12px;
+            font-size: 11px;
+            table-layout: auto;
         }
 
         th {
             background-color: #000;
-            padding: 12px 10px;
+            padding: 10px 6px;
             border-bottom: 2px solid var(--border-gray);
             color: var(--text-muted);
             font-size: 10px;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             white-space: nowrap;
         }
 
         td {
-            padding: 10px;
+            padding: 8px 6px;
             border-bottom: 1px solid var(--border-gray);
             font-weight: 600;
             white-space: nowrap;
@@ -400,10 +402,10 @@
 
         tr:hover { background-color: var(--surface-hover); }
 
-        .pos-cell { font-size: 14px; width: 35px; text-align: center; }
-        .driver-code { font-size: 14px; letter-spacing: 1px; }
-        .team-name { font-size: 10px; color: var(--text-muted); font-weight: 400; }
-        .sector-cell { font-family: monospace; font-size: 12px; }
+        .pos-cell { font-size: 13px; width: 30px; text-align: center; }
+        .driver-code { font-size: 13px; letter-spacing: 0.5px; }
+        .team-name { font-size: 9px; color: var(--text-muted); font-weight: 400; }
+        .sector-cell { font-family: monospace; font-size: 11px; }
 
         /* MINI SECTORS VISUAL BARS */
         .mini-sectors-bar {
@@ -423,8 +425,8 @@
 
         /* TYRE BADGE */
         .tyre-badge {
-            padding: 2px 6px;
-            font-size: 10px;
+            padding: 2px 5px;
+            font-size: 9px;
             display: inline-block;
             border-radius: 2px;
             font-weight: 800;
@@ -554,10 +556,27 @@
         }
         footer p { margin-bottom: 10px; }
 
+        /* RESPONSIVE LAYOUT (HP & MOBILE FIXES) */
         @media (max-width: 1024px) {
-            .track-stats { display: none; }
+            .track-stats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; }
             .brand-sub { display: none; }
             .round-info-group { flex-direction: column; align-items: flex-start; gap: 4px; }
+            header { padding: 12px 15px; }
+            .header-controls { width: 100%; justify-content: space-between; margin-top: 5px; }
+            .next-race-banner { flex-direction: column; align-items: flex-start; }
+            .next-race-countdown { text-align: left; }
+        }
+
+        @media (min-width: 1200px) {
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 8px 5px;
+            }
+            .table-wrapper {
+                overflow-x: hidden;
+            }
         }
     </style>
 </head>
@@ -698,16 +717,16 @@
                         <tr class="montserrat-black">
                             <th style="width: 3%;">POS</th>
                             <th style="width: 3%;">NO</th>
-                            <th style="width: 15%;">DRIVER</th>
-                            <th style="width: 5%;">LAP</th>
-                            <th style="width: 7%;">TYRE</th>
+                            <th style="width: 14%;">DRIVER</th>
+                            <th style="width: 4%;">LAP</th>
+                            <th style="width: 6%;">TYRE</th>
                             <th style="width: 4%;">PITS</th>
                             <th style="width: 8%;">BEST LAP</th>
                             <th style="width: 8%;">GAP LEADER</th>
                             <th style="width: 8%;">INTERVAL</th>
-                            <th style="width: 10%;">SECTOR 1</th>
-                            <th style="width: 10%;">SECTOR 2</th>
-                            <th style="width: 10%;">SECTOR 3</th>
+                            <th style="width: 11%;">SECTOR 1</th>
+                            <th style="width: 11%;">SECTOR 2</th>
+                            <th style="width: 11%;">SECTOR 3</th>
                             <th style="width: 9%;">SPEED TRAP</th>
                         </tr>
                     </thead>
