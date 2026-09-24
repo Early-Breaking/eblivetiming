@@ -25,6 +25,7 @@
             --accent-yellow: #ffcc00;
             --accent-red: #ff3333;
             --accent-blue: #00d2ff;
+            --accent-purple: #bd00ff;
         }
 
         * {
@@ -401,6 +402,22 @@
         .team-name { font-size: 10px; color: var(--text-muted); font-weight: 400; }
         .sector-cell { font-family: monospace; font-size: 12px; }
 
+        /* MINI SECTORS VISUAL BARS */
+        .mini-sectors-bar {
+            display: flex;
+            gap: 2px;
+            margin-top: 3px;
+        }
+        .mini-sector-segment {
+            height: 3px;
+            flex: 1;
+            background-color: #333;
+            border-radius: 1px;
+        }
+        .mini-sector-segment.purple { background-color: var(--accent-purple); box-shadow: 0 0 4px var(--accent-purple); }
+        .mini-sector-segment.green { background-color: var(--accent-green); box-shadow: 0 0 4px var(--accent-green); }
+        .mini-sector-segment.yellow { background-color: var(--accent-yellow); }
+
         /* TYRE BADGE */
         .tyre-badge {
             padding: 2px 6px;
@@ -617,6 +634,11 @@
                         </div>
 
                         <div class="track-stats">
+                            <!-- TOTAL LAP GP WIDGET BARU -->
+                            <div class="stat-box">
+                                <div class="stat-label montserrat-black" style="color: var(--accent-green);">TOTAL LAP GP</div>
+                                <div class="stat-value montserrat-black" id="total-lap-gp" style="color: var(--accent-green);">--/--</div>
+                            </div>
                             <div class="stat-box">
                                 <div class="stat-label montserrat-black">AIR TEMP</div>
                                 <div class="stat-value montserrat-black" id="air-temp">--°C</div>
@@ -653,7 +675,7 @@
                         <canvas id="trackCanvas"></canvas>
                     </div>
                     <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; text-align: center;" class="montserrat-black">
-                        REAL-TIME CIRCUIT COORDINATE PLOTTER
+                        REAL-TIME CIRCUIT COORDINATE & MINI SECTOR PLOTTER
                     </div>
                 </div>
             </div>
@@ -673,21 +695,22 @@
                         <tr class="montserrat-black">
                             <th style="width: 3%;">POS</th>
                             <th style="width: 3%;">NO</th>
-                            <th style="width: 16%;">DRIVER</th>
-                            <th style="width: 8%;">TYRE</th>
-                            <th style="width: 5%;">PITS</th>
-                            <th style="width: 9%;">BEST LAP</th>
-                            <th style="width: 9%;">GAP LEADER</th>
-                            <th style="width: 9%;">INTERVAL</th>
-                            <th style="width: 9%;">SECTOR 1</th>
-                            <th style="width: 9%;">SECTOR 2</th>
-                            <th style="width: 9%;">SECTOR 3</th>
-                            <th style="width: 11%;">SPEED TRAP</th>
+                            <th style="width: 15%;">DRIVER</th>
+                            <th style="width: 5%;">LAP</th>
+                            <th style="width: 7%;">TYRE</th>
+                            <th style="width: 4%;">PITS</th>
+                            <th style="width: 8%;">BEST LAP</th>
+                            <th style="width: 8%;">GAP LEADER</th>
+                            <th style="width: 8%;">INTERVAL</th>
+                            <th style="width: 10%;">SECTOR 1</th>
+                            <th style="width: 10%;">SECTOR 2</th>
+                            <th style="width: 10%;">SECTOR 3</th>
+                            <th style="width: 9%;">SPEED TRAP</th>
                         </tr>
                     </thead>
                     <tbody id="timing-body">
                         <tr>
-                            <td colspan="12" class="loading-state montserrat-black">
+                            <td colspan="13" class="loading-state montserrat-black">
                                 <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> CONNECTING TO TELEMETRY STREAM...
                             </td>
                         </tr>
@@ -1189,6 +1212,7 @@
             }
         }
 
+        /* SEGMENTED MINI SECTOR CIRCUIT CANVAS MAP RENDERER */
         function renderTrackMap(locationsData, isOffline) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
@@ -1222,25 +1246,38 @@
                 };
             }
 
-            ctx.strokeStyle = "#222";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            let first = true;
-            locationsData.forEach(l => {
-                let pt = transform(l.x, l.y);
-                if (first) { ctx.moveTo(pt.px, pt.py); first = false; } else { ctx.lineTo(pt.px, pt.py); }
-            });
-            ctx.stroke();
+            // GAMBAR TRACT CIRCUIT BERDASARKAN SEGMEN MINI SECTORS
+            const totalPoints = locationsData.length;
+            const colors = ['#00ff88', '#bd00ff', '#ffcc00', '#00ff88', '#00d2ff'];
+            
+            ctx.lineWidth = 4;
+            for (let i = 0; i < totalPoints - 1; i++) {
+                let pt1 = transform(locationsData[i].x, locationsData[i].y);
+                let pt2 = transform(locationsData[i+1].x, locationsData[i+1].y);
+                
+                // Color variation by mini sector segments
+                let colorIdx = Math.floor((i / totalPoints) * 20) % colors.length;
+                ctx.strokeStyle = colors[colorIdx];
 
+                ctx.beginPath();
+                ctx.moveTo(pt1.px, pt1.py);
+                ctx.lineTo(pt2.px, pt2.py);
+                ctx.stroke();
+            }
+
+            // POSISI DRIVER DOTS
             const latestDriverLocations = {};
             locationsData.forEach(l => { latestDriverLocations[l.driver_number] = l; });
 
             Object.values(latestDriverLocations).forEach(pos => {
                 let pt = transform(pos.x, pos.y);
-                ctx.fillStyle = "#00ff88";
+                ctx.fillStyle = "#ffffff";
+                ctx.shadowColor = "#00ff88";
+                ctx.shadowBlur = 6;
                 ctx.beginPath();
                 ctx.arc(pt.px, pt.py, 4, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0; // reset shadow
             });
         }
 
@@ -1253,6 +1290,30 @@
             if (comp.includes('inter') || comp === 'i') return 'tyre-intermediate';
             if (comp.includes('wet') || comp === 'w') return 'tyre-wet';
             return 'tyre-default';
+        }
+
+        /* HELPER UNTUK MENGHASILKAN MINI SECTORS VISUAL BARS (PURPLE, GREEN, YELLOW) */
+        function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest) {
+            if (!secDuration || secDuration === "-") {
+                return `<div class="mini-sectors-bar">
+                    <div class="mini-sector-segment"></div>
+                    <div class="mini-sector-segment"></div>
+                    <div class="mini-sector-segment"></div>
+                </div>`;
+            }
+            
+            let colorClass = 'yellow';
+            if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
+                colorClass = 'purple';
+            } else if (isPersonalBest) {
+                colorClass = 'green';
+            }
+
+            return `<div class="mini-sectors-bar">
+                <div class="mini-sector-segment ${colorClass}"></div>
+                <div class="mini-sector-segment ${colorClass}"></div>
+                <div class="mini-sector-segment ${colorClass}"></div>
+            </div>`;
         }
 
         async function fetchLiveTiming() {
@@ -1308,7 +1369,7 @@
                     document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'RACE').toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● OFFLINE (MENAMPILKAN HASIL RACE SEBELUMNYA)";
                     document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
-                    document.getElementById('latency-display').innerText = "STATUS: ARSES DATA TERAKHIR";
+                    document.getElementById('latency-display').innerText = "STATUS: ARSIP DATA TERAKHIR";
                     document.getElementById('flag-dot').className = "flag-dot offline";
                     document.getElementById('flag-text').innerText = "TRACK STATUS: SESI SELESAI / OFFLINE";
                     document.getElementById('map-status-label').innerText = "ARSIP GPS";
@@ -1371,7 +1432,22 @@
 
                 const bestLaps = {};
                 const sectorTimes = {};
+                const driverLapCount = {};
+                let maxCompletedLapInGP = 0;
+
+                // Cari Sektor Tercepat Sesi Ini (Purple Sectors Check)
+                let sessionBestS1 = null, sessionBestS2 = null, sessionBestS3 = null;
+
                 laps.forEach(l => {
+                    if (l.lap_number) {
+                        driverLapCount[l.driver_number] = Math.max(driverLapCount[l.driver_number] || 0, l.lap_number);
+                        if (l.lap_number > maxCompletedLapInGP) maxCompletedLapInGP = l.lap_number;
+                    }
+
+                    if (l.duration_sector_1 && (!sessionBestS1 || l.duration_sector_1 < sessionBestS1)) sessionBestS1 = l.duration_sector_1;
+                    if (l.duration_sector_2 && (!sessionBestS2 || l.duration_sector_2 < sessionBestS2)) sessionBestS2 = l.duration_sector_2;
+                    if (l.duration_sector_3 && (!sessionBestS3 || l.duration_sector_3 < sessionBestS3)) sessionBestS3 = l.duration_sector_3;
+
                     if (l.lap_duration && (!bestLaps[l.driver_number] || l.lap_duration < bestLaps[l.driver_number])) {
                         bestLaps[l.driver_number] = l.lap_duration;
                         sectorTimes[l.driver_number] = {
@@ -1383,6 +1459,10 @@
                     }
                 });
 
+                // UPDATE TOTAL LAP GP WIDGET
+                const totalGPLapsEstimated = targetSession && targetSession.session_name && targetSession.session_name.toLowerCase().includes('sprint') ? 24 : 57;
+                document.getElementById('total-lap-gp').innerText = `${maxCompletedLapInGP}/${totalGPLapsEstimated}`;
+
                 const tyreMap = {};
                 tyres.forEach(t => {
                     tyreMap[t.driver_number] = { compound: t.compound ? t.compound.substring(0, 1).toUpperCase() : "S", fullName: t.compound || "Soft", laps: t.tyre_age_at_start || 1 };
@@ -1393,6 +1473,7 @@
                     if (driverMap[num]) {
                         leaderboard.push({
                             pos: latestPositions[num], number: num, driver: driverMap[num],
+                            completedLaps: driverLapCount[num] || 0,
                             bestLap: bestLarpCheck(bestLaps[num]), sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
                             tyre: tyreMap[num] || { compound: "S", fullName: "Soft", laps: 1 }, pits: pitMap[num] || 0,
                             gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
@@ -1402,12 +1483,17 @@
 
                 leaderboard.sort((a, b) => a.pos - b.pos);
                 if (leaderboard.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="12" class="loading-state montserrat-black">NO POSITION DATA RECORDED.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black">NO POSITION DATA RECORDED.</td></tr>`;
                     return;
                 }
 
                 tableBody.innerHTML = leaderboard.map(row => {
                     const tyreCls = getTyreClass(row.tyre.fullName);
+
+                    const s1MiniHTML = generateMiniSectorHTML(row.sectors.s1, sessionBestS1, true);
+                    const s2MiniHTML = generateMiniSectorHTML(row.sectors.s2, sessionBestS2, true);
+                    const s3MiniHTML = generateMiniSectorHTML(row.sectors.s3, sessionBestS3, true);
+
                     return `
                         <tr>
                             <td class="pos-cell montserrat-black">${row.pos}</td>
@@ -1416,6 +1502,7 @@
                                 <div class="driver-code montserrat-black">${row.driver.code}</div>
                                 <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
                             </td>
+                            <td class="montserrat-black" style="color: var(--accent-green); font-size: 13px;">L${row.completedLaps}</td>
                             <td>
                                 <span class="tyre-badge ${tyreCls} montserrat-black">${row.tyre.compound}</span>
                                 <span style="font-size: 10px; color: var(--text-muted); margin-left: 2px;">L${row.tyre.laps}</span>
@@ -1424,9 +1511,18 @@
                             <td class="sector-cell montserrat-black">${row.bestLap ? formatLapTime(row.bestLap) : "NO TIME"}</td>
                             <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
                             <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s1}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s2}</td>
-                            <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.sectors.s3}</td>
+                            <td class="sector-cell montserrat-black">
+                                <div>${row.sectors.s1}</div>
+                                ${s1MiniHTML}
+                            </td>
+                            <td class="sector-cell montserrat-black">
+                                <div>${row.sectors.s2}</div>
+                                ${s2MiniHTML}
+                            </td>
+                            <td class="sector-cell montserrat-black">
+                                <div>${row.sectors.s3}</div>
+                                ${s3MiniHTML}
+                            </td>
                             <td class="sector-cell montserrat-black">${row.sectors.speed} KM/H</td>
                         </tr>
                     `;
