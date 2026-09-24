@@ -1346,50 +1346,42 @@
                 let isOfflineMode = false;
 
                 if (sessions && sessions.length > 0) {
-                    let latestLive = sessions[sessions.length - 1];
+                    targetSession = sessions[sessions.length - 1];
+                    // Cek apakah sesi paling akhir ini sudah selesai lebih dari 3 hari lalu
                     const now = new Date();
-                    const sessionStart = new Date(latestLive.date_start);
-                    const sessionEnd = new Date(latestLive.date_end || latestLive.date_start);
-                    
+                    const sessionEnd = new Date(targetSession.date_end || targetSession.date_start);
                     const diffDays = (now - sessionEnd) / (1000 * 60 * 60 * 24);
-                    if (diffDays > 3 || now < sessionStart) { 
-                        isOfflineMode = true; 
-                    } else { 
-                        targetSession = latestLive; 
+                    if (diffDays > 3) {
+                        isOfflineMode = true;
                     }
                 } else {
                     isOfflineMode = true;
                 }
 
+                // Jalur cadangan jika target session kosong
                 if (isOfflineMode) {
                     const currentYear = new Date().getFullYear();
-                    let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`);
+                    let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`).catch(() => []);
                     
                     if (yearSessions && yearSessions.length > 0) {
                         const now = new Date();
                         const completedRaces = yearSessions.filter(s => {
                             const end = new Date(s.date_end || s.date_start);
-                            return s.session_name && s.session_name.toLowerCase().includes('race') && end <= now;
+                            return end <= now;
                         });
 
-                        if (completedRaces.length > 0) {
-                            targetSession = completedRaces[completedRaces.length - 1];
-                        } else {
-                            targetSession = yearSessions[yearSessions.length - 1];
-                        }
-                    } else {
-                        let allSessions = await fetchWithRetry(`${API_BASE}/sessions`);
-                        targetSession = allSessions[allSessions.length - 1];
+                        targetSession = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : yearSessions[yearSessions.length - 1];
                     }
                 }
 
                 const sessionKey = targetSession ? targetSession.session_key : null;
                 if (!sessionKey) throw new Error("No session data available");
 
+                // Update Indikator UI
                 if (isOfflineMode) {
                     document.getElementById('session-status').innerText = "ARCHIVE / LATEST RESULT";
-                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'RACE').toUpperCase()}`;
-                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (MENAMPILKAN HASIL RACE SEBELUMNYA)";
+                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
+                    document.getElementById('live-indicator-text').innerText = "● OFFLINE (MENAMPILKAN HASIL TERAKHIR)";
                     document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
                     document.getElementById('latency-display').innerText = "STATUS: ARSIP DATA TERAKHIR";
                     document.getElementById('flag-dot').className = "flag-dot offline";
@@ -1397,7 +1389,7 @@
                     document.getElementById('map-status-label').innerText = "ARSIP GPS";
                 } else {
                     document.getElementById('session-status').innerText = "LIVE STREAM ACTIVE";
-                    document.getElementById('session-title').innerText = `${targetSession.location.toUpperCase()} GP - ${targetSession.session_name.toUpperCase()}`;
+                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'AZERBAIJAN'} GP - ${(targetSession.session_name || 'FP1').toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
                     document.getElementById('latency-display').innerText = "LATENCY: ~0.3s";
@@ -1405,10 +1397,11 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
+                // Ambil Data Telemetri dengan Error Safeguard pada Tiap API Call
                 const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
-                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`),
-                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`),
-                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => []),
+                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => []),
@@ -1421,16 +1414,16 @@
 
                 if (weather && weather.length > 0) {
                     const latestW = weather[weather.length - 1];
-                    document.getElementById('air-temp').innerText = `${latestW.air_temperature}°C`;
-                    document.getElementById('track-temp').innerText = `${latestW.track_temperature}°C`;
-                    document.getElementById('humidity').innerText = `${latestW.humidity}%`;
-                    document.getElementById('wind-speed').innerText = `${latestW.wind_speed} M/S`;
+                    document.getElementById('air-temp').innerText = `${latestW.air_temperature ?? '--'}°C`;
+                    document.getElementById('track-temp').innerText = `${latestW.track_temperature ?? '--'}°C`;
+                    document.getElementById('humidity').innerText = `${latestW.humidity ?? '--'}%`;
+                    document.getElementById('wind-speed').innerText = `${latestW.wind_speed ?? '--'} M/S`;
                 }
 
                 if (raceControl && raceControl.length > 0) {
                     const rcBox = document.getElementById('rc-messages');
                     rcBox.innerHTML = raceControl.slice(-3).reverse().map(msg => 
-                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'OFFLINE'}] ${msg.message ? msg.message.toUpperCase() : ''}</div>`
+                        `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : ''}</div>`
                     ).join('');
                     if (!isOfflineMode) updateTrackStatus(raceControl);
                 }
@@ -1447,8 +1440,8 @@
                 const intervalMap = {};
                 intervals.forEach(i => {
                     intervalMap[i.driver_number] = {
-                        gap: i.gap_to_leader !== null ? `+${i.gap_to_leader}s` : "LEADER",
-                        interval: i.interval !== null ? `+${i.interval}s` : "-"
+                        gap: i.gap_to_leader !== null && i.gap_to_leader !== undefined ? `+${i.gap_to_leader}s` : "LEADER",
+                        interval: i.interval !== null && i.interval !== undefined ? `+${i.interval}s` : "-"
                     };
                 });
 
@@ -1457,7 +1450,6 @@
                 const driverLapCount = {};
                 let maxCompletedLapInGP = 0;
 
-                // Cari Sektor Tercepat Sesi Ini (Purple Sectors Check)
                 let sessionBestS1 = null, sessionBestS2 = null, sessionBestS3 = null;
 
                 laps.forEach(l => {
@@ -1481,7 +1473,6 @@
                     }
                 });
 
-                // UPDATE TOTAL LAP GP WIDGET
                 const totalGPLapsEstimated = targetSession && targetSession.session_name && targetSession.session_name.toLowerCase().includes('sprint') ? 24 : 57;
                 document.getElementById('total-lap-gp').innerText = `${maxCompletedLapInGP}/${totalGPLapsEstimated}`;
 
@@ -1491,21 +1482,24 @@
                 });
 
                 let leaderboard = [];
-                Object.keys(latestPositions).forEach(num => {
+                // Fallback jika array position OpenF1 di menit-menit awal FP1 belum terisi penuh
+                const activeDriverNumbers = Object.keys(latestPositions).length > 0 ? Object.keys(latestPositions) : Object.keys(driverMap);
+
+                activeDriverNumbers.forEach(num => {
                     if (driverMap[num]) {
                         leaderboard.push({
-                            pos: latestPositions[num], number: num, driver: driverMap[num],
+                            pos: latestPositions[num] || "--", number: num, driver: driverMap[num],
                             completedLaps: driverLapCount[num] || 0,
                             bestLap: bestLarpCheck(bestLaps[num]), sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
-                            tyre: tyreMap[num] || { compound: "S", fullName: "Soft", laps: 1 }, pits: pitMap[num] || 0,
+                            tyre: tyreMap[num] || { compound: "-", fullName: "Default", laps: 0 }, pits: pitMap[num] || 0,
                             gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
                         });
                     }
                 });
 
-                leaderboard.sort((a, b) => a.pos - b.pos);
+                leaderboard.sort((a, b) => (parseInt(a.pos) || 99) - (parseInt(b.pos) || 99));
                 if (leaderboard.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black">NO POSITION DATA RECORDED.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black"><i class="fa-solid fa-spinner fa-spin"></i> WAITING FOR DRIVERS TO OUTLAP...</td></tr>`;
                     return;
                 }
 
@@ -1552,6 +1546,7 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> WAITING FOR OPENF1 LIVE FEED RESPONSE...</td></tr>`;
             }
         }
 
