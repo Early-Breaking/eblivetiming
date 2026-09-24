@@ -899,6 +899,7 @@
 
     <script>
         const API_BASE = "https://api.openf1.org/v1";
+        const JOLPICA_BASE = "https://api.jolpica.net/f1";
         let currentTimezone = 'Asia/Jakarta';
         let scheduleLoaded = false;
         let cachedRounds = [];
@@ -1338,27 +1339,74 @@
             </div>`;
         }
 
+        // FALLBACK STANDALONE VIA JOLPICA API JIKA OPENF1 401/CORS BLOCKED
+        async function fetchJolpicaFallback(tableBody) {
+            try {
+                const data = await fetchWithRetry(`${JOLPICA_BASE}/current/last/results.json`);
+                const raceData = data.MRData.RaceTable.Races[0];
+                if (!raceData) throw new Error("No Jolpica data");
+
+                document.getElementById('session-status').innerText = "ARCHIVE / JOLPICA FEED";
+                document.getElementById('session-title').innerText = `${raceData.raceName.toUpperCase()}`;
+                document.getElementById('live-indicator-text').innerText = "● OFFLINE (RESULT ARCHIVE)";
+                document.getElementById('live-indicator-text').style.color = "var(--text-muted)";
+                document.getElementById('latency-display').innerText = "STATUS: JOLPICA BACKUP API";
+                document.getElementById('flag-dot').className = "flag-dot offline";
+                document.getElementById('flag-text').innerText = "TRACK STATUS: SESI SELESAI";
+                document.getElementById('session-key-display').innerText = raceData.season + "-" + raceData.round;
+
+                const results = raceData.Results;
+                tableBody.innerHTML = results.map(r => `
+                    <tr>
+                        <td class="pos-cell montserrat-black">${r.position}</td>
+                        <td class="montserrat-black" style="color: var(--text-muted);">${r.number}</td>
+                        <td>
+                            <div class="driver-code montserrat-black">${r.Driver.code || r.Driver.driverId.substring(0, 3).toUpperCase()}</div>
+                            <div class="team-name montserrat-black">${r.Constructor.name.toUpperCase()}</div>
+                        </td>
+                        <td class="montserrat-black" style="color: var(--accent-green); font-size: 13px;">L${r.laps}</td>
+                        <td><span class="tyre-badge tyre-default montserrat-black">-</span></td>
+                        <td class="montserrat-black" style="color: var(--text-muted);">-</td>
+                        <td class="sector-cell montserrat-black">${r.FastestLap ? r.FastestLap.Time.time : "NO TIME"}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${r.Time ? r.Time.time : r.status}</td>
+                        <td class="sector-cell montserrat-black" style="color: var(--text-muted);">-</td>
+                        <td class="sector-cell montserrat-black"><div>-</div></td>
+                        <td class="sector-cell montserrat-black"><div>-</div></td>
+                        <td class="sector-cell montserrat-black"><div>-</div></td>
+                        <td class="sector-cell montserrat-black">${r.FastestLap && r.FastestLap.AverageSpeed ? Math.round(r.FastestLap.AverageSpeed.speed) : "-"} KM/H</td>
+                    </tr>
+                `).join('');
+                renderTrackMap([], true);
+            } catch (err) {
+                console.error("Jolpica Fallback Error:", err);
+                tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> DATA UNAVAILABLE CURRENTLY</td></tr>`;
+            }
+        }
+
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
-                let sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
+                // Trik: Coba panggil session key spesifik/historis untuk menghindari proteksi 401 Unauthorized OpenF1
                 let targetSession = null;
                 let isOfflineMode = false;
+                let sessions = null;
+
+                try {
+                    sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
+                } catch (e) {
+                    console.warn("OpenF1 session_key=latest blocked (401/CORS). Fallback to historical session.");
+                }
 
                 if (sessions && sessions.length > 0) {
                     targetSession = sessions[sessions.length - 1];
-                    // Cek apakah sesi paling akhir ini sudah selesai lebih dari 3 hari lalu
                     const now = new Date();
                     const sessionEnd = new Date(targetSession.date_end || targetSession.date_start);
                     const diffDays = (now - sessionEnd) / (1000 * 60 * 60 * 24);
-                    if (diffDays > 3) {
-                        isOfflineMode = true;
-                    }
+                    if (diffDays > 3) isOfflineMode = true;
                 } else {
                     isOfflineMode = true;
                 }
 
-                // Jalur cadangan jika target session kosong
                 if (isOfflineMode) {
                     const currentYear = new Date().getFullYear();
                     let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`).catch(() => []);
@@ -1371,13 +1419,14 @@
                         });
 
                         targetSession = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : yearSessions[yearSessions.length - 1];
+                    } else {
+                        // Fallback ke session key spesifik jika endpoint year bermasalah
+                        targetSession = { session_key: 9158, location: "Bahrain", session_name: "Race" };
                     }
                 }
 
-                const sessionKey = targetSession ? targetSession.session_key : null;
-                if (!sessionKey) throw new Error("No session data available");
+                const sessionKey = targetSession ? targetSession.session_key : 9158;
 
-                // Update Indikator UI
                 if (isOfflineMode) {
                     document.getElementById('session-status').innerText = "ARCHIVE / LATEST RESULT";
                     document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
@@ -1389,7 +1438,7 @@
                     document.getElementById('map-status-label').innerText = "ARSIP GPS";
                 } else {
                     document.getElementById('session-status').innerText = "LIVE STREAM ACTIVE";
-                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'AZERBAIJAN'} GP - ${(targetSession.session_name || 'FP1').toUpperCase()}`;
+                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'GRAND PRIX'} GP - ${(targetSession.session_name || 'FP1').toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
                     document.getElementById('latency-display').innerText = "LATENCY: ~0.3s";
@@ -1397,7 +1446,7 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Ambil Data Telemetri dengan Error Safeguard pada Tiap API Call
+                // Fetch dengan Catch Safeguard agar tidak throw error global
                 const [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
                     fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => []),
@@ -1409,6 +1458,11 @@
                     fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => []),
                     fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => [])
                 ]);
+
+                // Jika data drivers kosong akibat CORS/401, alihkan ke Jolpica Fallback
+                if (!drivers || drivers.length === 0) {
+                    return await fetchJolpicaFallback(tableBody);
+                }
 
                 renderTrackMap(locations, isOfflineMode);
 
@@ -1482,7 +1536,6 @@
                 });
 
                 let leaderboard = [];
-                // Fallback jika array position OpenF1 di menit-menit awal FP1 belum terisi penuh
                 const activeDriverNumbers = Object.keys(latestPositions).length > 0 ? Object.keys(latestPositions) : Object.keys(driverMap);
 
                 activeDriverNumbers.forEach(num => {
@@ -1546,7 +1599,7 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
-                tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> WAITING FOR OPENF1 LIVE FEED RESPONSE...</td></tr>`;
+                await fetchJolpicaFallback(tableBody);
             }
         }
 
