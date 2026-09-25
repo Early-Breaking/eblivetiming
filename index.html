@@ -410,7 +410,7 @@
         tr:hover { background-color: var(--surface-hover); }
 
         .pos-cell { font-size: 13px; width: 30px; text-align: center; }
-        .driver-code { font-size: 13px; letter-spacing: 0.5px; }
+        .driver-code { font-size: 13px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
         .team-name { font-size: 9px; color: var(--text-muted); font-weight: 400; }
         .sector-cell { font-family: monospace; font-size: 11px; }
 
@@ -423,12 +423,13 @@
         .mini-sector-segment {
             height: 3px;
             flex: 1;
-            background-color: #333;
+            background-color: #333; /* Default Empty */
             border-radius: 1px;
         }
         .mini-sector-segment.purple { background-color: var(--accent-purple); box-shadow: 0 0 4px var(--accent-purple); }
         .mini-sector-segment.green { background-color: var(--accent-green); box-shadow: 0 0 4px var(--accent-green); }
         .mini-sector-segment.yellow { background-color: var(--accent-yellow); }
+        .mini-sector-segment.grey { background-color: #555555; }
 
         /* TYRE BADGE */
         .tyre-badge {
@@ -445,6 +446,8 @@
         .tyre-intermediate { background-color: #00ff88; color: #000000; border-color: #00ff88; }
         .tyre-wet { background-color: #00d2ff; color: #000000; border-color: #00d2ff; }
         .tyre-default { border: 1px solid var(--text-white); color: var(--text-white); }
+        
+        .pit-badge { background-color: var(--accent-yellow); color: #000; border-color: var(--accent-yellow); }
 
         .loading-state { text-align: center; padding: 40px; color: var(--text-muted); }
 
@@ -1079,11 +1082,16 @@
 
         let predictionsData = [];
 
-        // Fungsi fetch dengan penanganan error 429 dan Exponential Backoff yang aman
+        // Fungsi fetch dengan penanganan error 429 dan error 401
         async function fetchWithRetry(url, retries = 3, delay = 2000) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url);
+                    
+                    if (response.status === 401) {
+                        console.warn(`Error 401 (Unauthorized) untuk ${url}. Melewati request ini...`);
+                        return null; // Nggak bikin crash, return null aja
+                    }
                     if (response.status === 429) {
                         console.warn(`Rate limit hit (429) for ${url}. Retrying in ${delay}ms...`);
                         if (i === retries - 1) throw new Error(`HTTP error! status: 429 (Rate Limit Exceeded)`);
@@ -1166,7 +1174,7 @@
                 }
             }
             if (nextRace) {
-                document.getElementById('next-race-name').innerText = `ROUND ${nextRace.round}: ${nextRace.location}`;
+                document.getElementById('next-race-name').innerText = `ROUND ${nextRace.round}:${nextRace.location}`;
                 document.getElementById('next-race-date').innerText = `Jadwal Utama: ${formatZonedTime(nextRace.date, currentTimezone)}`;
                 const diff = new Date(nextRace.date).getTime() - now.getTime();
                 if (diff > 0) {
@@ -1174,7 +1182,7 @@
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                    document.getElementById('countdown-timer').innerText = `${days}D ${String(hours).padStart(2,'0')}H ${String(mins).padStart(2,'0')}M ${String(secs).padStart(2,'0')}S`;
+                    document.getElementById('countdown-timer').innerText = `${days}D${String(hours).padStart(2,'0')}H ${String(mins).padStart(2,'0')}M${String(secs).padStart(2,'0')}S`;
                 } else {
                     document.getElementById('countdown-timer').innerText = "RACE IN PROGRESS / COMPLETED";
                 }
@@ -1206,7 +1214,7 @@
                         <div class="accordion-header" onclick="toggleAccordion(${idx})">
                             <div class="round-info-group">
                                 <span class="accordion-round-num montserrat-black">ROUND ${r.roundNumber}</span>
-                                <span class="accordion-gp-title montserrat-black">${r.location} ${r.canceled ? '<span class="badge-canceled montserrat-black">CANCELED</span>' : ''}</span>
+                                <span class="accordion-gp-title montserrat-black">${r.location}${r.canceled ? '<span class="badge-canceled montserrat-black">CANCELED</span>' : ''}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <span class="accordion-country montserrat-black">${r.country}</span>
@@ -1256,7 +1264,6 @@
             }
         }
 
-        /* SEGMENTED MINI SECTOR CIRCUIT CANVAS MAP RENDERER */
         function renderTrackMap(locationsData) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
@@ -1333,20 +1340,35 @@
             return 'tyre-default';
         }
 
-        function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest) {
-            let colorClass = 'yellow';
-            if (!secDuration || secDuration === "-") {
-                colorClass = '';
-            } else if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
-                colorClass = 'purple';
-            } else if (isPersonalBest) {
-                colorClass = 'green';
-            }
-
-            // Men-generate 8 segmen per kolom sektor. (8 segmen x 3 Sektor = Total 24 Mini Sector)
+        function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest, segmentsArray) {
             let segmentsHTML = '';
-            for(let i=0; i<8; i++) {
-                segmentsHTML += `<div class="mini-sector-segment ${colorClass}"></div>`;
+            
+            if (segmentsArray && Array.isArray(segmentsArray) && segmentsArray.length > 0) {
+                // Gunakan mapping segment langsung jika openf1.org menyediakan datanya (2048=Kuning, 2049=Hijau, 2051=Ungu, 2052=Pit)
+                segmentsArray.forEach(seg => {
+                    let colorClass = 'grey';
+                    if (seg === 2048) colorClass = 'yellow';
+                    else if (seg === 2049) colorClass = 'green';
+                    else if (seg === 2051) colorClass = 'purple';
+                    else if (seg === 2052) colorClass = 'yellow';
+                    segmentsHTML += `<div class="mini-sector-segment ${colorClass}"></div>`;
+                });
+            } else {
+                // Fallback (simulasi grey, yellow, green, purple)
+                let colorClass = 'grey';
+                if (!secDuration || secDuration === "-") {
+                    colorClass = 'grey';
+                } else if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
+                    colorClass = 'purple';
+                } else if (isPersonalBest) {
+                    colorClass = 'green';
+                } else {
+                    colorClass = 'yellow';
+                }
+
+                for(let i=0; i<8; i++) {
+                    segmentsHTML += `<div class="mini-sector-segment ${colorClass}"></div>`;
+                }
             }
 
             return `<div class="mini-sectors-bar">${segmentsHTML}</div>`;
@@ -1368,18 +1390,21 @@
                 if (sessions && sessions.length > 0) {
                     targetSession = sessions[sessions.length - 1];
                     const now = new Date();
-                    // Jika waktu saat ini lebih besar dari jadwal berakhirnya sesi, berarti sesi kelar.
                     if (targetSession.date_end && now > new Date(targetSession.date_end)) {
                         isSessionEnded = true;
                     }
                 } else {
-                    targetSession = { session_key: 9158, location: "Loading", session_name: "Session" };
+                    targetSession = { session_key: 9158, meeting_name: "Loading", session_name: "Session" };
                 }
 
                 const sessionKey = targetSession.session_key;
 
                 document.getElementById('session-status').innerText = isSessionEnded ? "SESSION COMPLETED" : "LIVE STREAM ACTIVE";
-                document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'GRAND PRIX'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
+                
+                // UPDATE JUDUL SESI: Nama GP - Nama Sesi
+                let gpTitle = targetSession.meeting_name || targetSession.country_name || targetSession.location || 'GRAND PRIX';
+                let sessionName = targetSession.session_name || 'SESSION';
+                document.getElementById('session-title').innerText = `${gpTitle.toUpperCase()} -${sessionName.toUpperCase()}`;
                 
                 if (isSessionEnded) {
                     document.getElementById('live-indicator-text').innerText = "● SESSION ENDED";
@@ -1393,7 +1418,6 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Fetch dengan fallback Caching Lokal (localStorage)
                 let [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
                     fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => null),
                     fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => null),
@@ -1406,7 +1430,6 @@
                     fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => null)
                 ]);
 
-                // Simpan ke cache lokal jika data valid, jika gagal/rate limit ambil dari cache localStorage
                 if (drivers && drivers.length > 0) { localStorage.setItem('cache_drivers', JSON.stringify(drivers)); } else { drivers = JSON.parse(localStorage.getItem('cache_drivers')) || []; }
                 if (positions && positions.length > 0) { localStorage.setItem('cache_positions', JSON.stringify(positions)); } else { positions = JSON.parse(localStorage.getItem('cache_positions')) || []; }
                 if (laps && laps.length > 0) { localStorage.setItem('cache_laps', JSON.stringify(laps)); } else { laps = JSON.parse(localStorage.getItem('cache_laps')) || []; }
@@ -1439,7 +1462,6 @@
                     ).join('');
                 }
                 
-                // Track Status & Checkered Flag Logic
                 updateTrackStatus(raceControl, isSessionEnded);
 
                 const driverMap = {};
@@ -1462,6 +1484,7 @@
                 const bestLaps = {};
                 const sectorTimes = {};
                 const driverLapCount = {};
+                const latestDriverLaps = {};
                 let maxCompletedLapInGP = 0;
 
                 let sessionBestS1 = null, sessionBestS2 = null, sessionBestS3 = null;
@@ -1470,6 +1493,11 @@
                     if (l.lap_number) {
                         driverLapCount[l.driver_number] = Math.max(driverLapCount[l.driver_number] || 0, l.lap_number);
                         if (l.lap_number > maxCompletedLapInGP) maxCompletedLapInGP = l.lap_number;
+                    }
+
+                    // Deteksi lap terbaru tiap driver untuk kalkulasi posisi in pit/out pit
+                    if (!latestDriverLaps[l.driver_number] || l.lap_number > latestDriverLaps[l.driver_number].lap_number) {
+                        latestDriverLaps[l.driver_number] = l;
                     }
 
                     if (l.duration_sector_1 && (!sessionBestS1 || l.duration_sector_1 < sessionBestS1)) sessionBestS1 = l.duration_sector_1;
@@ -1482,7 +1510,10 @@
                             s1: l.duration_sector_1 ? l.duration_sector_1.toFixed(3) : "-",
                             s2: l.duration_sector_2 ? l.duration_sector_2.toFixed(3) : "-",
                             s3: l.duration_sector_3 ? l.duration_sector_3.toFixed(3) : "-",
-                            speed: l.st_speed ? Math.round(l.st_speed) : "-"
+                            speed: l.st_speed ? Math.round(l.st_speed) : "-",
+                            segments_s1: l.segments_sector_1 || null,
+                            segments_s2: l.segments_sector_2 || null,
+                            segments_s3: l.segments_sector_3 || null
                         };
                     }
                 });
@@ -1500,12 +1531,22 @@
 
                 activeDriverNumbers.forEach(num => {
                     if (driverMap[num]) {
+                        // Deteksi In Pit Status (Berdasarkan data lap terakhirnya)
+                        let isCurrentlyInPit = false;
+                        let drvLatestLap = latestDriverLaps[num];
+                        if (drvLatestLap) {
+                            if (drvLatestLap.pit_out_time === null && drvLatestLap.pit_in_time !== null) isCurrentlyInPit = true;
+                            if (drvLatestLap.duration_sector_1 === null && drvLatestLap.duration_sector_2 === null) isCurrentlyInPit = true;
+                        }
+
                         leaderboard.push({
                             pos: latestPositions[num] || "--", number: num, driver: driverMap[num],
                             completedLaps: driverLapCount[num] || 0,
-                            bestLap: bestLarpCheck(bestLaps[num]), sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
+                            bestLap: bestLarpCheck(bestLaps[num]), 
+                            sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-", segments_s1: null, segments_s2: null, segments_s3: null },
                             tyre: tyreMap[num] || { compound: "-", fullName: "Default", laps: 0 }, pits: pitMap[num] || 0,
-                            gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-"
+                            gap: intervalMap[num] ? intervalMap[num].gap : "-", interval: intervalMap[num] ? intervalMap[num].interval : "-",
+                            inPit: isCurrentlyInPit
                         });
                     }
                 });
@@ -1519,16 +1560,18 @@
                 tableBody.innerHTML = leaderboard.map(row => {
                     const tyreCls = getTyreClass(row.tyre.fullName);
 
-                    const s1MiniHTML = generateMiniSectorHTML(row.sectors.s1, sessionBestS1, true);
-                    const s2MiniHTML = generateMiniSectorHTML(row.sectors.s2, sessionBestS2, true);
-                    const s3MiniHTML = generateMiniSectorHTML(row.sectors.s3, sessionBestS3, true);
+                    const s1MiniHTML = generateMiniSectorHTML(row.sectors.s1, sessionBestS1, true, row.sectors.segments_s1);
+                    const s2MiniHTML = generateMiniSectorHTML(row.sectors.s2, sessionBestS2, true, row.sectors.segments_s2);
+                    const s3MiniHTML = generateMiniSectorHTML(row.sectors.s3, sessionBestS3, true, row.sectors.segments_s3);
+
+                    const pitBadge = row.inPit ? `<span class="tyre-badge pit-badge montserrat-black">PIT</span>` : ``;
 
                     return `
                         <tr>
                             <td class="pos-cell montserrat-black">${row.pos}</td>
                             <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
                             <td>
-                                <div class="driver-code montserrat-black">${row.driver.code}</div>
+                                <div class="driver-code montserrat-black">${row.driver.code} ${pitBadge}</div>
                                 <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
                             </td>
                             <td class="montserrat-black" style="color: var(--accent-green); font-size: 13px;">L${row.completedLaps}</td>
@@ -1595,7 +1638,7 @@
         updateNextRaceBanner();
         setInterval(updateNextRaceBanner, 1000);
         fetchLiveTiming();
-        // Refresh otomatis diperlambat ke 30 detik untuk menghindari limit API yang terlalu agresif
+        
         setInterval(fetchLiveTiming, 30000);
 
         document.addEventListener('DOMContentLoaded', () => {
