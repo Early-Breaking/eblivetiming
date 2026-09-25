@@ -240,6 +240,13 @@
         .flag-dot.yellow { background-color: var(--accent-yellow); box-shadow: 0 0 8px var(--accent-yellow); }
         .flag-dot.red { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
         .flag-dot.offline { background-color: var(--text-muted); box-shadow: none; }
+        
+        /* CHEQUERED FLAG STYLE */
+        .flag-dot.chequered {
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+            box-shadow: 0 0 8px #ffffff;
+            border: 1px solid #fff;
+        }
 
         /* MAIN LAYOUT GRID */
         .dashboard-grid {
@@ -410,7 +417,7 @@
         /* MINI SECTORS VISUAL BARS */
         .mini-sectors-bar {
             display: flex;
-            gap: 2px;
+            gap: 1px;
             margin-top: 3px;
         }
         .mini-sector-segment {
@@ -1214,21 +1221,29 @@
             }).join('');
         }
 
-        function toggleAccordion(idx) {
-            const item = document.getElementById(`accordion-item-${idx}`);
-            if (item) item.classList.toggle('open');
-        }
-
-        function updateTrackStatus(raceControlMsgs) {
+        function updateTrackStatus(raceControlMsgs, isSessionEnded) {
             const flagDot = document.getElementById('flag-dot');
             const flagText = document.getElementById('flag-text');
+            
+            // PRIORITAS: AUTO-CHEQUERED BILA SESI HABIS
+            if (isSessionEnded) {
+                flagDot.className = 'flag-dot chequered';
+                flagText.innerText = 'TRACK STATUS: CHEQUERED FLAG (SESSION FINISHED)';
+                return;
+            }
+
             if (!raceControlMsgs || raceControlMsgs.length === 0) return;
             const flagEvents = raceControlMsgs.filter(m => m.flag || (m.category === 'Flag') || (m.message && m.message.toUpperCase().includes('FLAG')));
+            
             if (flagEvents.length > 0) {
                 const latestFlag = flagEvents[flagEvents.length - 1];
                 const msgUpper = latestFlag.message ? latestFlag.message.toUpperCase() : '';
                 const flagType = latestFlag.flag ? latestFlag.flag.toUpperCase() : '';
-                if (flagType === 'RED' || msgUpper.includes('RED FLAG')) {
+                
+                if (flagType === 'CHEQUERED' || msgUpper.includes('CHEQUERED')) {
+                    flagDot.className = 'flag-dot chequered';
+                    flagText.innerText = 'TRACK STATUS: CHEQUERED FLAG (SESSION FINISHED)';
+                } else if (flagType === 'RED' || msgUpper.includes('RED FLAG')) {
                     flagDot.className = 'flag-dot red';
                     flagText.innerText = 'TRACK STATUS: RED FLAG (SESSION SUSPENDED)';
                 } else if (flagType === 'YELLOW' || msgUpper.includes('YELLOW') || msgUpper.includes('SAFETY CAR') || msgUpper.includes('VSC')) {
@@ -1242,7 +1257,7 @@
         }
 
         /* SEGMENTED MINI SECTOR CIRCUIT CANVAS MAP RENDERER */
-        function renderTrackMap(locationsData, isOffline) {
+        function renderTrackMap(locationsData) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -1250,11 +1265,11 @@
             canvas.height = canvas.parentElement.clientHeight;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (isOffline || !locationsData || locationsData.length === 0) {
+            if (!locationsData || locationsData.length === 0) {
                 ctx.fillStyle = "#666";
                 ctx.font = "12px 'Plus Jakarta Sans'";
                 ctx.textAlign = "center";
-                ctx.fillText("CIRCUIT MAP OFFLINE (HISTORICAL ARCHIVE)", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("CIRCUIT DATA UNAVAILABLE YET", canvas.width / 2, canvas.height / 2);
                 return;
             }
 
@@ -1319,47 +1334,30 @@
         }
 
         function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest) {
-            if (!secDuration || secDuration === "-") {
-                return `<div class="mini-sectors-bar">
-                    <div class="mini-sector-segment"></div>
-                    <div class="mini-sector-segment"></div>
-                    <div class="mini-sector-segment"></div>
-                </div>`;
-            }
-            
             let colorClass = 'yellow';
-            if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
+            if (!secDuration || secDuration === "-") {
+                colorClass = '';
+            } else if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
                 colorClass = 'purple';
             } else if (isPersonalBest) {
                 colorClass = 'green';
             }
 
-            return `<div class="mini-sectors-bar">
-                <div class="mini-sector-segment ${colorClass}"></div>
-                <div class="mini-sector-segment ${colorClass}"></div>
-                <div class="mini-sector-segment ${colorClass}"></div>
-            </div>`;
-        }
+            // Men-generate 8 segmen per kolom sektor. (8 segmen x 3 Sektor = Total 24 Mini Sector)
+            let segmentsHTML = '';
+            for(let i=0; i<8; i++) {
+                segmentsHTML += `<div class="mini-sector-segment ${colorClass}"></div>`;
+            }
 
-        function handleApiErrorState(tableBody) {
-            document.getElementById('session-status').innerText = "ARCHIVE / OFFLINE MODE";
-            document.getElementById('session-title').innerText = "TELEMETRY ARCHIVE MODE";
-            document.getElementById('live-indicator-text').innerText = "● ARCHIVE";
-            document.getElementById('live-indicator-text').style.color = "var(--accent-yellow)";
-            document.getElementById('latency-display').innerText = "STATUS: STABLE ARCHIVE MODE";
-            document.getElementById('flag-dot').className = "flag-dot offline";
-            document.getElementById('flag-text').innerText = "TRACK STATUS: OFFLINE";
-            
-            tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black" style="color: var(--accent-yellow);"><i class="fa-solid fa-database"></i> MENAMPILKAN ARSIP DATA SESI TERAKHIR.</td></tr>`;
-            renderTrackMap([], true);
+            return `<div class="mini-sectors-bar">${segmentsHTML}</div>`;
         }
 
         async function fetchLiveTiming() {
             const tableBody = document.getElementById('timing-body');
             try {
                 let targetSession = null;
-                let isOfflineMode = false;
                 let sessions = null;
+                let isSessionEnded = false;
 
                 try {
                     sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
@@ -1370,44 +1368,24 @@
                 if (sessions && sessions.length > 0) {
                     targetSession = sessions[sessions.length - 1];
                     const now = new Date();
-                    const sessionEnd = new Date(targetSession.date_end || targetSession.date_start);
-                    const diffDays = (now - sessionEnd) / (1000 * 60 * 60 * 24);
-                    if (diffDays > 3) isOfflineMode = true;
-                } else {
-                    isOfflineMode = true;
-                }
-
-                if (isOfflineMode) {
-                    const currentYear = new Date().getFullYear();
-                    let yearSessions = await fetchWithRetry(`${API_BASE}/sessions?year=${currentYear}`).catch(() => []);
-                    
-                    if (yearSessions && yearSessions.length > 0) {
-                        const now = new Date();
-                        const completedRaces = yearSessions.filter(s => {
-                            const end = new Date(s.date_end || s.date_start);
-                            return end <= now;
-                        });
-
-                        targetSession = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : yearSessions[yearSessions.length - 1];
-                    } else {
-                        targetSession = { session_key: 9158, location: "Bahrain", session_name: "Race" };
+                    // Jika waktu saat ini lebih besar dari jadwal berakhirnya sesi, berarti sesi kelar.
+                    if (targetSession.date_end && now > new Date(targetSession.date_end)) {
+                        isSessionEnded = true;
                     }
+                } else {
+                    targetSession = { session_key: 9158, location: "Loading", session_name: "Session" };
                 }
 
-                const sessionKey = targetSession ? targetSession.session_key : 9158;
+                const sessionKey = targetSession.session_key;
 
-                if (isOfflineMode) {
-                    document.getElementById('session-status').innerText = "ARCHIVE RESULT";
-                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'LATEST'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
-                    document.getElementById('live-indicator-text').innerText = "● ARCHIVE MODE";
-                    document.getElementById('live-indicator-text').style.color = "var(--accent-yellow)";
-                    document.getElementById('latency-display').innerText = "STATUS: ARCHIVE DATA";
-                    document.getElementById('flag-dot').className = "flag-dot offline";
-                    document.getElementById('flag-text').innerText = "TRACK STATUS: ARCHIVE ACTIVE";
-                    document.getElementById('map-status-label').innerText = "GPS ARCHIVE";
+                document.getElementById('session-status').innerText = isSessionEnded ? "SESSION COMPLETED" : "LIVE STREAM ACTIVE";
+                document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'GRAND PRIX'} GP - ${(targetSession.session_name || 'SESSION').toUpperCase()}`;
+                
+                if (isSessionEnded) {
+                    document.getElementById('live-indicator-text').innerText = "● SESSION ENDED";
+                    document.getElementById('live-indicator-text').style.color = "var(--text-white)";
+                    document.getElementById('latency-display').innerText = "STATUS: WAITING NEXT SESSION";
                 } else {
-                    document.getElementById('session-status').innerText = "LIVE STREAM ACTIVE";
-                    document.getElementById('session-title').innerText = `${targetSession.location ? targetSession.location.toUpperCase() : 'GRAND PRIX'} GP - ${(targetSession.session_name || 'FP1').toUpperCase()}`;
                     document.getElementById('live-indicator-text').innerText = "● LIVE TELEMETRY";
                     document.getElementById('live-indicator-text').style.color = "var(--accent-green)";
                     document.getElementById('latency-display').innerText = "LATENCY: ~0.3s";
@@ -1415,7 +1393,7 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Fetch dengan fallback Caching Lokal (localStorage) agar tidak kosong saat rate limit / interval berbayar
+                // Fetch dengan fallback Caching Lokal (localStorage)
                 let [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
                     fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => null),
                     fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => null),
@@ -1436,21 +1414,15 @@
                 if (raceControl && raceControl.length > 0) { localStorage.setItem('cache_rc', JSON.stringify(raceControl)); } else { raceControl = JSON.parse(localStorage.getItem('cache_rc')) || []; }
                 if (pits && pits.length > 0) { localStorage.setItem('cache_pits', JSON.stringify(pits)); } else { pits = JSON.parse(localStorage.getItem('cache_pits')) || []; }
                 if (weather && weather.length > 0) { localStorage.setItem('cache_weather', JSON.stringify(weather)); } else { weather = JSON.parse(localStorage.getItem('cache_weather')) || []; }
-                
-                // Khusus intervals yang sering kena limit/berbayar, di-handle dengan aman menggunakan cache lokal terakhir
-                if (intervals && intervals.length > 0) { 
-                    localStorage.setItem('cache_intervals', JSON.stringify(intervals)); 
-                } else { 
-                    intervals = JSON.parse(localStorage.getItem('cache_intervals')) || []; 
-                }
-
+                if (intervals && intervals.length > 0) { localStorage.setItem('cache_intervals', JSON.stringify(intervals)); } else { intervals = JSON.parse(localStorage.getItem('cache_intervals')) || []; }
                 if (locations && locations.length > 0) { localStorage.setItem('cache_locations', JSON.stringify(locations)); } else { locations = JSON.parse(localStorage.getItem('cache_locations')) || []; }
 
                 if (!drivers || drivers.length === 0) {
-                    return handleApiErrorState(tableBody);
+                    tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black">WAITING FOR SESSION TELEMETRY DATA...</td></tr>`;
+                    return;
                 }
 
-                renderTrackMap(locations, isOfflineMode);
+                renderTrackMap(locations);
 
                 if (weather && weather.length > 0) {
                     const latestW = weather[weather.length - 1];
@@ -1465,8 +1437,10 @@
                     rcBox.innerHTML = raceControl.slice(-3).reverse().map(msg => 
                         `<div class="rc-item">[${msg.date ? msg.date.substring(11, 19) : 'LIVE'}] ${msg.message ? msg.message.toUpperCase() : ''}</div>`
                     ).join('');
-                    if (!isOfflineMode) updateTrackStatus(raceControl);
                 }
+                
+                // Track Status & Checkered Flag Logic
+                updateTrackStatus(raceControl, isSessionEnded);
 
                 const driverMap = {};
                 drivers.forEach(d => { driverMap[d.driver_number] = { code: d.name_acronym || "DRV", fullName: d.full_name, team: d.team_name || "Team" }; });
@@ -1585,7 +1559,7 @@
 
             } catch (err) {
                 console.error("Telemetry Error:", err);
-                handleApiErrorState(tableBody);
+                tableBody.innerHTML = `<tr><td colspan="13" class="loading-state montserrat-black">WAITING FOR SESSION DATA...</td></tr>`;
             }
         }
 
