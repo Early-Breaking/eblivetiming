@@ -26,6 +26,7 @@
             --accent-red: #ff3333;
             --accent-blue: #00d2ff;
             --accent-purple: #bd00ff;
+            --accent-gray: #444444;
         }
 
         * {
@@ -410,46 +411,26 @@
         tr:hover { background-color: var(--surface-hover); }
 
         .pos-cell { font-size: 13px; width: 30px; text-align: center; }
-        .driver-code { font-size: 13px; letter-spacing: 0.5px; }
+        .driver-code { font-size: 13px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
         .team-name { font-size: 9px; color: var(--text-muted); font-weight: 400; }
         .sector-cell { font-family: monospace; font-size: 11px; }
 
         /* MINI SECTORS VISUAL BARS */
         .mini-sectors-bar {
             display: flex;
-            gap: 1px;
+            gap: 2px;
             margin-top: 3px;
         }
         .mini-sector-segment {
-            height: 3px;
+            height: 4px;
             flex: 1;
-            background-color: #333;
+            background-color: var(--border-gray);
             border-radius: 1px;
         }
         .mini-sector-segment.purple { background-color: var(--accent-purple); box-shadow: 0 0 4px var(--accent-purple); }
         .mini-sector-segment.green { background-color: var(--accent-green); box-shadow: 0 0 4px var(--accent-green); }
         .mini-sector-segment.yellow { background-color: var(--accent-yellow); }
-        .mini-sector-segment.gray { background-color: #555555; }
-
-        /* PIT & ON-TRACK BADGES */
-        .badge-pit {
-            background-color: #ff3333;
-            color: #ffffff;
-            padding: 1px 4px;
-            font-size: 8px;
-            border-radius: 2px;
-            margin-left: 4px;
-            font-weight: 800;
-        }
-        .badge-ontrack {
-            background-color: #00ff88;
-            color: #000000;
-            padding: 1px 4px;
-            font-size: 8px;
-            border-radius: 2px;
-            margin-left: 4px;
-            font-weight: 800;
-        }
+        .mini-sector-segment.gray { background-color: var(--accent-gray); }
 
         /* TYRE BADGE */
         .tyre-badge {
@@ -467,9 +448,18 @@
         .tyre-wet { background-color: #00d2ff; color: #000000; border-color: #00d2ff; }
         .tyre-default { border: 1px solid var(--text-white); color: var(--text-white); }
 
+        .pit-badge {
+            background-color: var(--accent-red);
+            color: #fff;
+            padding: 1px 4px;
+            font-size: 8px;
+            border-radius: 2px;
+            letter-spacing: 0.5px;
+        }
+
         .loading-state { text-align: center; padding: 40px; color: var(--text-muted); }
 
-        /* ACCORDION CALENDAR STYLES */
+        /* ACCORDION CALENDAR STYLES FIX */
         .accordion-container {
             display: flex;
             flex-direction: column;
@@ -531,16 +521,13 @@
         }
 
         .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
+            display: none;
             background-color: var(--surface-black);
-            border-top: 0px solid var(--border-gray);
+            border-top: 1px solid var(--border-gray);
         }
 
         .accordion-item.open .accordion-content {
-            max-height: 600px;
-            border-top: 1px solid var(--border-gray);
+            display: block;
         }
 
         .session-sub-table {
@@ -596,15 +583,9 @@
         }
 
         @media (min-width: 1200px) {
-            table {
-                font-size: 11px;
-            }
-            th, td {
-                padding: 8px 5px;
-            }
-            .table-wrapper {
-                overflow-x: hidden;
-            }
+            table { font-size: 11px; }
+            th, td { padding: 8px 5px; }
+            .table-wrapper { overflow-x: hidden; }
         }
     </style>
 </head>
@@ -684,7 +665,6 @@
                         </div>
 
                         <div class="track-stats">
-                            <!-- TOTAL LAP GP WIDGET BARU -->
                             <div class="stat-box">
                                 <div class="stat-label montserrat-black" style="color: var(--accent-green);">TOTAL LAP GP</div>
                                 <div class="stat-value montserrat-black" id="total-lap-gp" style="color: var(--accent-green);">--/--</div>
@@ -738,7 +718,7 @@
                 </div>
             </div>
 
-            <!-- TELEMETRY TABLE (FULL WIDTH NO SCROLL IN DESKTOP) -->
+            <!-- TELEMETRY TABLE -->
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -748,14 +728,14 @@
                             <th style="width: 14%;">DRIVER</th>
                             <th style="width: 4%;">LAP</th>
                             <th style="width: 6%;">TYRE</th>
-                            <th style="width: 8%;">PITS / STATUS</th>
+                            <th style="width: 4%;">PITS</th>
                             <th style="width: 8%;">BEST LAP</th>
-                            <th style="width: 7%;">GAP LEADER</th>
-                            <th style="width: 7%;">INTERVAL</th>
+                            <th style="width: 8%;">GAP LEADER</th>
+                            <th style="width: 8%;">INTERVAL</th>
                             <th style="width: 11%;">SECTOR 1</th>
                             <th style="width: 11%;">SECTOR 2</th>
                             <th style="width: 11%;">SECTOR 3</th>
-                            <th style="width: 7%;">SPEED TRAP</th>
+                            <th style="width: 9%;">SPEED TRAP</th>
                         </tr>
                     </thead>
                     <tbody id="timing-body">
@@ -768,7 +748,7 @@
                 </table>
             </div>
 
-            <!-- FITUR PREDIKSI PODIUM F1 & LEADERBOARD (FULL WIDTH) -->
+            <!-- FITUR PREDIKSI PODIUM F1 & LEADERBOARD -->
             <section class="w-full my-8 p-6 bg-[#141414] border border-[#262626] rounded-2xl shadow-xl text-white" style="display: none !important;">
                 <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div>
@@ -778,7 +758,6 @@
                     <span class="px-3 py-1 bg-[#ff3333]/20 text-[#ff3333] text-xs font-semibold rounded-full border border-[#ff3333]/30 animate-pulse montserrat-black">LIVE</span>
                 </div>
 
-                <!-- Form Input Prediksi -->
                 <form id="prediction-form" class="space-y-4 bg-[#1c1c1c] p-4 rounded-xl border border-[#262626]">
                     <div>
                         <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1 montserrat-black">Nama / Username WhatsApp</label>
@@ -874,7 +853,6 @@
                     </button>
                 </form>
 
-                <!-- Leaderboard Hasil Tebakan -->
                 <div class="mt-8">
                     <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3 montserrat-black">📊 Prediksi Terbaru dari Komunitas EB</h3>
                     <div class="overflow-x-auto">
@@ -905,7 +883,7 @@
                     <span class="status-badge montserrat-black">OFFICIAL CALENDAR 2026 (UPDATED)</span>
                     <h1 class="montserrat-italic" style="font-size: 24px;">RACE CALENDAR & SESSIONS</h1>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">
-                        Jadwal resmi 2026 berdasarkan pembaruan terbaru.
+                        Jadwal resmi 2026 berdasarkan pembaruan terbaru. Klik tiap Grand Prix untuk melihat jadwal sesi.
                     </p>
                 </div>
             </div>
@@ -1100,13 +1078,13 @@
 
         let predictionsData = [];
 
-        // Fungsi fetch aman yang menangani Error 401 & Rate Limit 429
+        // Fetch aman dengan penanganan status 401 dan 429
         async function fetchWithRetry(url, retries = 3, delay = 2000) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url);
                     if (response.status === 401) {
-                        console.warn(`Auth 401 bypass for ${url}`);
+                        console.warn(`Unauthorized (401) on ${url}. Fallback to cache/safe handling.`);
                         return null;
                     }
                     if (response.status === 429) {
@@ -1115,11 +1093,7 @@
                         await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
                         continue;
                     }
-                    if (!response.ok) {
-                        if (i === retries - 1) return null;
-                        await new Promise(res => setTimeout(res, delay * (i + 1)));
-                        continue;
-                    }
+                    if (!response.ok) return null;
                     return await response.json();
                 } catch (err) {
                     if (i === retries - 1) return null;
@@ -1220,6 +1194,14 @@
             renderCalendarAccordion(officialCalendar2026);
         }
 
+        /* FIX RACE CALENDAR ACCORDION CLICK TOGGLE */
+        function toggleAccordion(index) {
+            const item = document.getElementById(`accordion-item-${index}`);
+            if (item) {
+                item.classList.toggle('open');
+            }
+        }
+
         function renderCalendarAccordion(rounds) {
             const container = document.getElementById('schedule-accordion');
             container.innerHTML = rounds.map((r, idx) => {
@@ -1285,7 +1267,6 @@
             }
         }
 
-        /* SEGMENTED MINI SECTOR CIRCUIT CANVAS MAP RENDERER */
         function renderTrackMap(locationsData) {
             const canvas = document.getElementById('trackCanvas');
             if (!canvas) return;
@@ -1362,35 +1343,28 @@
             return 'tyre-default';
         }
 
-        // FUNGSI MINI SECTOR DENGAN DUKUNGAN UNGU, HIJAU, KUNING & ABU-ABU
+        /* WARNA MINI SECTOR LENGKAP: PURPLE, GREEN, YELLOW, ABU-ABU */
         function generateMiniSectorHTML(secDuration, sessionBestSec, isPersonalBest) {
+            let primaryColorClass = 'gray';
+
+            if (secDuration && secDuration !== "-") {
+                if (sessionBestSec && parseFloat(secDuration) <= parseFloat(sessionBestSec)) {
+                    primaryColorClass = 'purple';
+                } else if (isPersonalBest) {
+                    primaryColorClass = 'green';
+                } else {
+                    primaryColorClass = 'yellow';
+                }
+            }
+
+            // Variasi segmen abu-abu, kuning, hijau, ungu
             let segmentsHTML = '';
-
-            if (!secDuration || secDuration === "-") {
-                // Jika belum ada catatan waktu / di lap out -> segmen abu-abu (gray)
-                for (let i = 0; i < 8; i++) {
-                    segmentsHTML += `<div class="mini-sector-segment gray"></div>`;
+            for (let i = 0; i < 8; i++) {
+                let currentClass = primaryColorClass;
+                if (primaryColorClass === 'yellow' && i >= 6) {
+                    currentClass = 'gray'; // Variasi visual segmen
                 }
-            } else {
-                const secVal = parseFloat(secDuration);
-                const bestVal = sessionBestSec ? parseFloat(sessionBestSec) : null;
-
-                // Membagi 8 segmen mini sector per kolom dengan warna kombinasi (purple, green, yellow, gray)
-                for (let i = 0; i < 8; i++) {
-                    let segClass = 'yellow';
-                    if (bestVal && secVal <= bestVal) {
-                        segClass = (i === 2 || i === 5) ? 'green' : 'purple';
-                    } else if (isPersonalBest) {
-                        if (i === 1 || i === 6) segClass = 'yellow';
-                        else if (i === 4) segClass = 'gray';
-                        else segClass = 'green';
-                    } else {
-                        if (i % 3 === 0) segClass = 'gray';
-                        else if (i % 2 === 0) segClass = 'yellow';
-                        else segClass = 'green';
-                    }
-                    segmentsHTML += `<div class="mini-sector-segment ${segClass}"></div>`;
-                }
+                segmentsHTML += `<div class="mini-sector-segment ${currentClass}"></div>`;
             }
 
             return `<div class="mini-sectors-bar">${segmentsHTML}</div>`;
@@ -1403,11 +1377,7 @@
                 let sessions = null;
                 let isSessionEnded = false;
 
-                try {
-                    sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
-                } catch (e) {
-                    console.warn("OpenF1 session_key=latest rate limited.");
-                }
+                sessions = await fetchWithRetry(`${API_BASE}/sessions?session_key=latest`);
 
                 if (sessions && sessions.length > 0) {
                     targetSession = sessions[sessions.length - 1];
@@ -1436,20 +1406,19 @@
 
                 document.getElementById('session-key-display').innerText = sessionKey;
 
-                // Fetch data dari OpenF1
                 let [drivers, positions, laps, tyres, raceControl, pits, weather, intervals, locations] = await Promise.all([
-                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/weather?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`).catch(() => null),
-                    fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`).catch(() => null)
+                    fetchWithRetry(`${API_BASE}/drivers?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/position?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/laps?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/stints?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/race_control?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/pit?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/weather?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/intervals?session_key=${sessionKey}`),
+                    fetchWithRetry(`${API_BASE}/location?session_key=${sessionKey}`)
                 ]);
 
-                // Simpan ke cache lokal jika data valid
+                // Fallback Caching Lokal
                 if (drivers && drivers.length > 0) { localStorage.setItem('cache_drivers', JSON.stringify(drivers)); } else { drivers = JSON.parse(localStorage.getItem('cache_drivers')) || []; }
                 if (positions && positions.length > 0) { localStorage.setItem('cache_positions', JSON.stringify(positions)); } else { positions = JSON.parse(localStorage.getItem('cache_positions')) || []; }
                 if (laps && laps.length > 0) { localStorage.setItem('cache_laps', JSON.stringify(laps)); } else { laps = JSON.parse(localStorage.getItem('cache_laps')) || []; }
@@ -1487,16 +1456,16 @@
                 const driverMap = {};
                 drivers.forEach(d => { driverMap[d.driver_number] = { code: d.name_acronym || "DRV", fullName: d.full_name, team: d.team_name || "Team" }; });
 
+                // Multi-fetch Posisi Driver & In Pit Status
                 const latestPositions = {};
                 positions.forEach(p => { latestPositions[p.driver_number] = p.position; });
 
-                // PEMETAAN PIT STOP & STATUS DI PIT / DI TREK
                 const pitMap = {};
-                const inPitStatusMap = {};
+                const driverInPitStatus = {};
                 pits.forEach(p => { 
                     pitMap[p.driver_number] = (pitMap[p.driver_number] || 0) + 1;
-                    if (p.pit_duration === null || p.pit_duration === undefined || p.pit_duration > 35) {
-                        inPitStatusMap[p.driver_number] = true;
+                    if (!p.pit_duration || p.pit_duration === 0) {
+                        driverInPitStatus[p.driver_number] = true;
                     }
                 });
 
@@ -1534,6 +1503,9 @@
                             speed: l.st_speed ? Math.round(l.st_speed) : "-"
                         };
                     }
+                    if (l.is_pit_out_lap) {
+                        driverInPitStatus[l.driver_number] = false;
+                    }
                 });
 
                 const totalGPLapsEstimated = targetSession && targetSession.session_name && targetSession.session_name.toLowerCase().includes('sprint') ? 24 : 57;
@@ -1553,12 +1525,12 @@
                             pos: latestPositions[num] || "--", 
                             number: num, 
                             driver: driverMap[num],
+                            inPit: driverInPitStatus[num] || false,
                             completedLaps: driverLapCount[num] || 0,
                             bestLap: bestLarpCheck(bestLaps[num]), 
                             sectors: sectorTimes[num] || { s1: "-", s2: "-", s3: "-", speed: "-" },
                             tyre: tyreMap[num] || { compound: "-", fullName: "Default", laps: 0 }, 
                             pits: pitMap[num] || 0,
-                            inPit: inPitStatusMap[num] || false,
                             gap: intervalMap[num] ? intervalMap[num].gap : "-", 
                             interval: intervalMap[num] ? intervalMap[num].interval : "-"
                         });
@@ -1578,17 +1550,16 @@
                     const s2MiniHTML = generateMiniSectorHTML(row.sectors.s2, sessionBestS2, true);
                     const s3MiniHTML = generateMiniSectorHTML(row.sectors.s3, sessionBestS3, true);
 
-                    // INDIKATOR PIT STATUS (IN PIT ATAU TRACK)
-                    const pitStatusBadge = row.inPit 
-                        ? `<span class="badge-pit montserrat-black">IN PIT</span>` 
-                        : `<span class="badge-ontrack montserrat-black">TRACK</span>`;
+                    const pitStatusBadge = row.inPit ? `<span class="pit-badge montserrat-black">PIT</span>` : '';
 
                     return `
                         <tr>
                             <td class="pos-cell montserrat-black">${row.pos}</td>
                             <td class="montserrat-black" style="color: var(--text-muted);">${row.number}</td>
                             <td>
-                                <div class="driver-code montserrat-black">${row.driver.code}</div>
+                                <div class="driver-code montserrat-black">
+                                    ${row.driver.code} ${pitStatusBadge}
+                                </div>
                                 <div class="team-name montserrat-black">${row.driver.team.toUpperCase()}</div>
                             </td>
                             <td class="montserrat-black" style="color: var(--accent-green); font-size: 13px;">L${row.completedLaps}</td>
@@ -1596,7 +1567,7 @@
                                 <span class="tyre-badge ${tyreCls} montserrat-black">${row.tyre.compound}</span>
                                 <span style="font-size: 10px; color: var(--text-muted); margin-left: 2px;">L${row.tyre.laps}</span>
                             </td>
-                            <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP ${pitStatusBadge}</td>
+                            <td class="montserrat-black" style="color: var(--text-muted);">${row.pits} STOP</td>
                             <td class="sector-cell montserrat-black">${row.bestLap ? formatLapTime(row.bestLap) : "NO TIME"}</td>
                             <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.gap}</td>
                             <td class="sector-cell montserrat-black" style="color: var(--text-muted);">${row.interval}</td>
